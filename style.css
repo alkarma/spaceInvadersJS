@@ -84,3 +84,15 @@ body{
 	top:0;
 	left: 15px;
 }
+.game_score{
+	position: fixed;
+	top: 0;
+	right: 0;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 26px;
+	color: green;
+	z-index: 3;
+}
+.game_score:before{
+	content: "score: ";
+}
