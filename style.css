@@ -5,7 +5,7 @@ body{
 /*	cursor: none;*/
 }
 .start_button{
-	position: fixed;
+	position: absolute;
 	left: 50%;
 	margin-left: -150px;
 	background: white;
@@ -20,6 +20,11 @@ body{
 	border: 5px solid #444444;
 	color: #444444;
 	cursor: pointer;
+}
+.notice{
+	font-size: 12px;
+	display: block;
+	margin-top: 10px;
 }
 .start_button:hover{
 	background: #444444;
@@ -79,7 +84,7 @@ body{
 .aliens{
 	width:60px;
 	height: 43px;
-	background-image: url(pics/static1.png);
+	background: url(pics/static1.png);
 	position: absolute;
 	top:0;
 	left: 15px;

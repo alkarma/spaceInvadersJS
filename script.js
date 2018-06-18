@@ -66,13 +66,24 @@ startBtn.addEventListener("click", function () {
         });
 
     //ALIENS
-        function random(){
-            return Math.floor(Math.random() * (screenWidth - 61 + 1)) + 1;
-        }
+        // function random(){
+        //     return Math.floor(Math.random() * (screenWidth - 61 + 1)) + 1;
+        // }
         function createAlien(){
             var newAlien = document.createElement('div');
             newAlien.className = "aliens";
-            newAlien.style.left = random()+'px';
+            // newAlien.style.left = random()+'px';
+            function getRndInteger(min, max) {
+                return Math.floor(Math.random() * (max - min + 1) ) + min;
+            }
+            var randomN = getRndInteger(0,2);
+            if(randomN == 0){
+                newAlien.style.left = 1+'px';
+            }else if (randomN == 1){
+                newAlien.style.left = screenWidth/2 + 'px';
+            }else{
+                newAlien.style.left = screenWidth - 61 + 'px';
+            }
             openSpace.appendChild(newAlien);
     //MOVE THE ALIEN
             var statusX = 'right';
@@ -99,6 +110,7 @@ startBtn.addEventListener("click", function () {
                 moveAlienY++;
                 getAlien.style.left = moveAlienX + 'px';
                 getAlien.style.top = moveAlienY + 'px';
+
             },10);}
             moveAlien ();
         }
