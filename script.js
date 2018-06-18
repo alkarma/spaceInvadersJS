@@ -90,8 +90,8 @@ startBtn.addEventListener("click", function () {
             var alienX= alienPos.x;
             var moveAlienX = getAlien.offsetLeft;
             var moveAlienY = getAlien.offsetTop;
-            function moveAlien () {
 
+            function moveAlien () {
             
             setInterval(function(){
                 if(statusX == 'right'){
@@ -107,9 +107,17 @@ startBtn.addEventListener("click", function () {
                 moveAlienY++;
                 getAlien.style.left = moveAlienX + 'px';
                 getAlien.style.top = moveAlienY + 'px';
-
             },10);}
             moveAlien ();
+
+    // GAMEOVER
+            function gameOver(){
+                console.log(getAlien.style.top);
+                if ((getAlien.style.top-'px')*1 > screenHeight) {
+                    alert('GAMEOVER!');
+                }
+            }
+            setInterval(gameOver,1);
         }
         createAlien();
             
