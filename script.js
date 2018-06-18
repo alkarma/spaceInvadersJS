@@ -112,7 +112,7 @@ startBtn.addEventListener("click", function () {
 
     // GAMEOVER
             function gameOver(){
-                console.log(getAlien.style.top);
+                // console.log(getAlien.style.top);
                 if ((getAlien.style.top-'px')*1 > screenHeight) {
                     alert('GAMEOVER!');
                 }
