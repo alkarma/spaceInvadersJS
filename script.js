@@ -52,7 +52,7 @@ startBtn.addEventListener("click", function () {
             rocketPosY = rocketPosY + 2;
             if(rocketPos.top<0){
                 openSpace.removeChild(shootingRocket);
-            } else if(rocketPos.top < alienPos.bottom && rocketPos.left > alienPos.left && rocketPos.right < alienPos.right){
+            } else if(rocketPos.top < alienPos.bottom && rocketPos.left > alienPos.left && rocketPos.right < alienPos.right && rocketPos.bottom > alienPos.top){
                 openSpace.removeChild(shootingRocket);
                 openSpace.removeChild(getAlien);
                 createAlien();
@@ -66,13 +66,10 @@ startBtn.addEventListener("click", function () {
         });
 
     //ALIENS
-        // function random(){
-        //     return Math.floor(Math.random() * (screenWidth - 61 + 1)) + 1;
-        // }
+
         function createAlien(){
             var newAlien = document.createElement('div');
             newAlien.className = "aliens";
-            // newAlien.style.left = random()+'px';
             function getRndInteger(min, max) {
                 return Math.floor(Math.random() * (max - min + 1) ) + min;
             }
