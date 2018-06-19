@@ -36,7 +36,7 @@ body{
 	border: 5px solid red;
 }
 #container{
-	background: url(pics/space.jpg);
+	background: url(pics/space2.jpg);
 	width: 100%;
 	height: 100vh;
 }
@@ -100,4 +100,35 @@ body{
 }
 .game_score:before{
 	content: "score: ";
+}
+.gameover{
+	display: none;
+	position: fixed;
+	z-index: 8;
+	top: 0;
+	height: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #f7f7f7;
+	border: 5px solid #444444;
+	border-radius: 25px;
+	box-sizing: border-box;
+}
+.yourscore{
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 50px;
+	color: #444444;
+}
+.gameover_inscription{
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 40px;
+	color: #444444;
+}
+.gameover_notice{
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 30px;
+	color: #444444;
 }

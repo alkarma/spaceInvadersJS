@@ -13,6 +13,11 @@ startBtn.addEventListener("click", function () {
     gameScoreDisp.className = "game_score";
     openSpace.appendChild(gameScoreDisp);
     gameScoreDisp.innerHTML = gameScore;
+    var gameOverIn = document.querySelector('.gameover');
+    var scoreIn = document.querySelector('.yourscore');
+
+
+
 
 
     openSpace.style.cursor = 'none';
@@ -58,6 +63,12 @@ startBtn.addEventListener("click", function () {
                 createAlien();
                 gameScore++;
                 gameScoreDisp.innerHTML = gameScore;
+                delete moveAlienY;
+                var scoreCount = localStorage.getItem('0');
+                scoreCount++;
+                localStorage.setItem(0, scoreCount);
+                var getScore = localStorage.getItem(0, scoreCount);
+                console.log(getScore);
             }
 
                     // console.log(alienPos);
@@ -68,6 +79,7 @@ startBtn.addEventListener("click", function () {
     //ALIENS
 
         function createAlien(){
+            var moveAlienY = 0;
             var newAlien = document.createElement('div');
             newAlien.className = "aliens";
             function getRndInteger(min, max) {
@@ -89,11 +101,13 @@ startBtn.addEventListener("click", function () {
             var alienY = alienPos.y;
             var alienX= alienPos.x;
             var moveAlienX = getAlien.offsetLeft;
-            var moveAlienY = getAlien.offsetTop;
+            moveAlienY = getAlien.offsetTop;
 
             function moveAlien () {
             
             setInterval(function(){
+                moveAlienY = 0; 
+                moveAlienY = getAlien.offsetTop;
                 if(statusX == 'right'){
                 moveAlienX = moveAlienX + 4;
                 }else if(statusX == 'left'){
@@ -113,13 +127,15 @@ startBtn.addEventListener("click", function () {
     // GAMEOVER
             function gameOver(){
                 // console.log(getAlien.style.top);
-                if ((getAlien.style.top-'px')*1 > screenHeight) {
-                    alert('GAMEOVER!');
+                if (moveAlienY > screenHeight) {
+                    gameOverIn.style.display = "block";
+                    scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
                 }
             }
             setInterval(gameOver,1);
         }
-        createAlien();
+            createAlien();
+        
             
 
 
