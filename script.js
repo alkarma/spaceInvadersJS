@@ -15,7 +15,12 @@ startBtn.addEventListener("click", function () {
     gameScoreDisp.innerHTML = gameScore;
     var gameOverIn = document.querySelector('.gameover');
     var scoreIn = document.querySelector('.yourscore');
-
+    var ammo = 30;
+    var ammoDisp = document.createElement('span');
+    ammoDisp.className = "ammo";
+    openSpace.appendChild(ammoDisp);
+    ammoDisp.innerHTML = ammo;
+    var uWin = document.querySelector('.youwin');
 
 
 
@@ -23,27 +28,54 @@ startBtn.addEventListener("click", function () {
     openSpace.style.cursor = 'none';
 
     //SPACESHIP MOVE
-
-    document.addEventListener("mousemove", function(e){
-        shipX = e.clientX
+    
+    
+    //MOUSE MOVE
+//    document.addEventListener("mousemove", function(e){
+//        shipX = e.clientX
+//    });
+//        function moveShip(){
+//        spaceShip.style.left = shipX - 50 + 'px';
+//    }
+//    setInterval(moveShip, 1);
+    
+    //KEYBOARDMOVE
+    
+    document.addEventListener('keydown', (event) => {
+        var keyName = event.key;
+        if (event.key == "ArrowRight"){
+            if(shipX<screenWidth){
+            shipX+=30;
+            spaceShip.style.left = shipX - 50 + 'px';
+            }
+        }else if (event.key == "ArrowLeft"){
+            if(shipX>0){
+            shipX-=30;
+            spaceShip.style.left = shipX - 50 + 'px';
+            }
+        }
     });
-        function moveShip(){
-        spaceShip.style.left = shipX - 50 + 'px';
-    }
-    setInterval(moveShip, 1);
 
     //NEW ROCKETS
 
     openSpace.addEventListener("click", function () {
-        var newRocket = document.createElement('div');
-        newRocket.className = "rocket";
-        newRocket.style.left = shipX + 'px';
-        openSpace.appendChild(newRocket);
-        var rockets = document.querySelectorAll('.rocket');
-        for (var i = 0; i < rockets.length; i++) {
-                var shootingRocket = rockets[i];
-                var rocketPosY = 50;
-            }
+        
+        if(ammo<0){
+            ammoDisp.innerHTML = 0;
+        }
+        if(ammo>0){
+            ammo--;
+            ammoDisp.innerHTML = ammo;
+            var newRocket = document.createElement('div');
+            newRocket.className = "rocket";
+            newRocket.style.left = shipX + 'px';
+            openSpace.appendChild(newRocket);
+            var rocketPosY = 0;
+            var rockets = document.querySelectorAll('.rocket');
+            for (var i = 0; i < rockets.length; i++) {
+                    var shootingRocket = rockets[i];
+                    rocketPosY = 50;
+                }
 
     //SHOOTING
 
@@ -54,26 +86,50 @@ startBtn.addEventListener("click", function () {
             var rocketPos = shootingRocket.getBoundingClientRect();
             var getAlien = document.querySelector(".aliens");
             var alienPos = getAlien.getBoundingClientRect();
-            rocketPosY = rocketPosY + 2;
-            if(rocketPos.top<0){
-                openSpace.removeChild(shootingRocket);
-            } else if(rocketPos.top < alienPos.bottom && rocketPos.left > alienPos.left && rocketPos.right < alienPos.right && rocketPos.bottom > alienPos.top){
-                openSpace.removeChild(shootingRocket);
-                openSpace.removeChild(getAlien);
-                createAlien();
-                gameScore++;
-                gameScoreDisp.innerHTML = gameScore;
-                delete moveAlienY;
-                var scoreCount = localStorage.getItem('0');
-                scoreCount++;
-                localStorage.setItem(0, scoreCount);
-                var getScore = localStorage.getItem(0, scoreCount);
-                console.log(getScore);
-            }
+            if(rocketPos.top > 0){
+                rocketPosY = rocketPosY + 10;
 
+                if(rocketPosY>=screenHeight-10){
+                    openSpace.removeChild(shootingRocket);
+                    rocketPosY = 0;
+                } else if(rocketPos.top < alienPos.bottom && rocketPos.left > alienPos.left && rocketPos.right < alienPos.right && rocketPos.bottom > alienPos.top){
+                    openSpace.removeChild(shootingRocket);
+                    openSpace.removeChild(getAlien);
+                    createAlien();
+                    gameScore++;
+                    if(gameScore == 10){
+                        ammo += 30;
+                        ammoDisp.innerHTML = ammo + " +30";
+                    }
+                    if(gameScore == 20){
+                        ammo += 25;
+                        ammoDisp.innerHTML = ammo + " +25";
+                    }
+                    if(gameScore == 30 || gameScore == 40){
+                        ammo += 20;
+                        ammoDisp.innerHTML = ammo + " +20";
+                    }
+                    if(gameScore == 50){
+                        ammo += 10;
+                        ammoDisp.innerHTML = ammo + " +10";
+                    }
+                    if(gameScore == 60){
+                        ammo += 100;
+                        ammoDisp.innerHTML = ammo + " +100";
+                    }
+                    gameScoreDisp.innerHTML = gameScore;
+                    delete moveAlienY;
+                    var scoreCount = localStorage.getItem('0');
+                    scoreCount++;
+                    localStorage.setItem(0, scoreCount);
+                    var getScore = localStorage.getItem(0, scoreCount);
+                    console.log(getScore);
+                }
+            }
                     // console.log(alienPos);
         },1);
             setInterval(fireRockets, 1);
+        }
         });
 
     //ALIENS
@@ -94,6 +150,7 @@ startBtn.addEventListener("click", function () {
                 newAlien.style.left = screenWidth - 61 + 'px';
             }
             openSpace.appendChild(newAlien);
+            
     //MOVE THE ALIEN
             var statusX = 'right';
             var getAlien = document.querySelector(".aliens");
@@ -133,6 +190,15 @@ startBtn.addEventListener("click", function () {
                 }
             }
             setInterval(gameOver,1);
+            function youWinThisGame(){
+                
+                if (gameScore == 100) {
+                    uWin.style.display = "block";
+                    scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
+                }
+            }
+            setInterval(youWinThisGame,1);
+            
         }
             createAlien();
         

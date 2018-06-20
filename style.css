@@ -97,14 +97,41 @@ body{
 	font-size: 26px;
 	color: green;
 	z-index: 3;
+    margin: 25px;
 }
 .game_score:before{
 	content: "score: ";
+}
+.ammo{
+	position: fixed;
+	top: 0;
+	left: 0;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 26px;
+	color: green;
+	z-index: 3;
+    margin: 25px;
+}
+.ammo:before{
+	content: "Ammo: ";
 }
 .gameover{
 	display: none;
 	position: fixed;
 	z-index: 8;
+	top: 0;
+	height: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #f7f7f7;
+	border: 5px solid #444444;
+	border-radius: 25px;
+	box-sizing: border-box;
+}
+.youwin{
+    display: none;
+	position: fixed;
+	z-index: 9;
 	top: 0;
 	height: 0;
 	width: 100%;
