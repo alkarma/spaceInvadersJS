@@ -84,10 +84,10 @@ body{
 .aliens{
 	width:60px;
 	height: 43px;
-	background: url(pics/static1.png);
 	position: absolute;
 	top:0;
 	left: 15px;
+	background: url(pics/move1.png);
 }
 .game_score{
 	position: fixed;
