@@ -114,7 +114,7 @@ startBtn.addEventListener("click", function () {
                         ammoDisp.innerHTML = ammo + " +10";
                     }
                     if(gameScore == 60){
-                        ammo += 100;
+                        ammo += 45;
                         ammoDisp.innerHTML = ammo + " +100";
                     }
                     gameScoreDisp.innerHTML = gameScore;
