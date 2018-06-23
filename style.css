@@ -36,9 +36,9 @@ body{
 	border: 5px solid red;
 }
 #container{
-	background: url(pics/space2.jpg);
 	width: 100%;
 	height: 100vh;
+	background: url(pics/space3.jpg);
 }
 #spaceship{
 	position: absolute;

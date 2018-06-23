@@ -25,8 +25,6 @@ startBtn.addEventListener("click", function () {
     var mainMusic = new Audio('audio/main_theme.mp3');
     mainMusic.play();
     mainMusic.loop = true;
-    var moveSound = new Audio('audio/move.wav');
-
 
 
     openSpace.style.cursor = 'none';
@@ -51,13 +49,11 @@ startBtn.addEventListener("click", function () {
             if(shipX<screenWidth){
             shipX+=30;
             spaceShip.style.left = shipX - 50 + 'px';
-            moveSound.paly();
             }
         }else if (event.key == "ArrowLeft"){
             if(shipX>0){
             shipX-=30;
             spaceShip.style.left = shipX - 50 + 'px';
-            moveSound.play();
             }
         }
     });
