@@ -22,6 +22,10 @@ startBtn.addEventListener("click", function () {
     ammoDisp.innerHTML = ammo;
     var uWin = document.querySelector('.youwin');
 
+    var mainMusic = new Audio('audio/main_theme.mp3');
+    mainMusic.play();
+    mainMusic.loop = true;
+    var moveSound = new Audio('audio/move.wav');
 
 
 
@@ -47,11 +51,13 @@ startBtn.addEventListener("click", function () {
             if(shipX<screenWidth){
             shipX+=30;
             spaceShip.style.left = shipX - 50 + 'px';
+            moveSound.paly();
             }
         }else if (event.key == "ArrowLeft"){
             if(shipX>0){
             shipX-=30;
             spaceShip.style.left = shipX - 50 + 'px';
+            moveSound.play();
             }
         }
     });
@@ -64,6 +70,8 @@ startBtn.addEventListener("click", function () {
             ammoDisp.innerHTML = 0;
         }
         if(ammo>0){
+            var shootingSound = new Audio('audio/shoot-01.wav');
+            shootingSound.play();
             ammo--;
             ammoDisp.innerHTML = ammo;
             var newRocket = document.createElement('div');
@@ -95,27 +103,35 @@ startBtn.addEventListener("click", function () {
                 } else if(rocketPos.top < alienPos.bottom && rocketPos.left > alienPos.left && rocketPos.right < alienPos.right && rocketPos.bottom > alienPos.top){
                     openSpace.removeChild(shootingRocket);
                     openSpace.removeChild(getAlien);
+                    var expSound = new Audio('audio/explosion-02.wav');
+                    expSound.play();
                     createAlien();
                     gameScore++;
+                    var bonusSound = new Audio('audio/pickup-01.wav');
                     if(gameScore == 10){
                         ammo += 30;
                         ammoDisp.innerHTML = ammo + " +30";
+                        bonusSound.play();
                     }
                     if(gameScore == 20){
                         ammo += 25;
                         ammoDisp.innerHTML = ammo + " +25";
+                        bonusSound.play();
                     }
                     if(gameScore == 30 || gameScore == 40){
                         ammo += 20;
                         ammoDisp.innerHTML = ammo + " +20";
+                        bonusSound.play();
                     }
                     if(gameScore == 50){
                         ammo += 10;
                         ammoDisp.innerHTML = ammo + " +10";
+                        bonusSound.play();
                     }
                     if(gameScore == 60){
                         ammo += 45;
-                        ammoDisp.innerHTML = ammo + " +100";
+                        ammoDisp.innerHTML = ammo + " +45";
+                        bonusSound.play();
                     }
                     gameScoreDisp.innerHTML = gameScore;
                     delete moveAlienY;
@@ -160,6 +176,7 @@ startBtn.addEventListener("click", function () {
             var moveAlienX = getAlien.offsetLeft;
             moveAlienY = getAlien.offsetTop;
 
+
             function moveAlien () {
             
             setInterval(function(){
@@ -187,6 +204,7 @@ startBtn.addEventListener("click", function () {
                 if (moveAlienY > screenHeight) {
                     gameOverIn.style.display = "block";
                     scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
+                    mainMusic.pause();
                 }
             }
             setInterval(gameOver,1);
