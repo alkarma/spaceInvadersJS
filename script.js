@@ -1,7 +1,22 @@
-document.addEventListener("DOMContentLoaded", function () {
-	let startBtn = document.querySelector(".start_button");
-	startBtn.addEventListener("click", function () {
-		startBtn.style.display = "none";
+$(function(){
+	$('#container').addClass('yo');
+	var startBtn = $(".start_button");
+	startBtn.on("click", function() {
+		game();
+	});
+
+	function getRndInteger(min, max) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	function createAlienObject() {
+		var newAlien = document.createElement("div");
+		newAlien.className = "aliens";
+		$('#container').append(newAlien);
+	}
+
+	function game() {
+		startBtn.hide();
 		var openSpace = document.querySelector("#container");
 		var screenSize = openSpace.getBoundingClientRect();
 		var screenWidth = screenSize.width;
@@ -137,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
 							scoreCount++;
 							localStorage.setItem(0, scoreCount);
 							var getScore = localStorage.getItem(0, scoreCount);
-							console.log(getScore);
+							// console.log(getScore);
 						}
 					}
 					// console.log(alienPos);
@@ -150,34 +165,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 		function createAlien() {
 			var moveAlienY = 0;
-			var newAlien = document.createElement("div");
-			newAlien.className = "aliens";
-			function getRndInteger(min, max) {
-				return Math.floor(Math.random() * (max - min + 1)) + min;
-			}
-			var randomN = getRndInteger(0, 2);
-			if (randomN == 0) {
-				newAlien.style.left = 1 + "px";
-			} else if (randomN == 1) {
-				newAlien.style.left = screenWidth / 2 + "px";
-			} else {
-				newAlien.style.left = screenWidth - 61 + "px";
-			}
-			openSpace.appendChild(newAlien);
+			createAlienObject();
+			var newAlien = $('.aliens')
+			var maxWidth = $('#container').width();
+			var randomN = getRndInteger(1, maxWidth - 61);
+			newAlien.css("left", randomN);
 
 			//MOVE THE ALIEN
 			var statusX = "right";
-			var getAlien = document.querySelector(".aliens");
-			var alienPos = getAlien.getBoundingClientRect();
-			var alienY = alienPos.y;
-			var alienX = alienPos.x;
-			var moveAlienX = getAlien.offsetLeft;
-			moveAlienY = getAlien.offsetTop;
+			var getAlien = $(".aliens");
+			var moveAlienX = getAlien.offset().left;
 
 			function moveAlien() {
-				setInterval(function () {
-					moveAlienY = 0;
-					moveAlienY = getAlien.offsetTop;
+				var interval = setInterval(move, 10);
+				function move() {
+					moveAlienY = getAlien.offset().top;
 					if (statusX == "right") {
 						moveAlienX = moveAlienX + 4;
 					} else if (statusX == "left") {
@@ -189,9 +191,9 @@ document.addEventListener("DOMContentLoaded", function () {
 						statusX = "right";
 					}
 					moveAlienY++;
-					getAlien.style.left = moveAlienX + "px";
-					getAlien.style.top = moveAlienY + "px";
-				}, 10);
+					getAlien.css("left", moveAlienX);
+					getAlien.css("top", moveAlienY);
+				}
 			}
 			moveAlien();
 
@@ -199,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			function gameOver() {
 				// console.log(getAlien.style.top);
 				if (moveAlienY > screenHeight) {
-					gameOverIn.style.display = "block";
+					gameOverIn.style.show();
 					scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
 					mainMusic.pause();
 				}
@@ -207,12 +209,12 @@ document.addEventListener("DOMContentLoaded", function () {
 			setInterval(gameOver, 1);
 			function youWinThisGame() {
 				if (gameScore == 100) {
-					uWin.style.display = "block";
+					uWin.style.show();
 					scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
 				}
 			}
 			setInterval(youWinThisGame, 1);
 		}
 		createAlien();
-	});
+	}
 });
