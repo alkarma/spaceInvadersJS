@@ -1,19 +1,34 @@
 $(function(){
-	var startBtn = $(".start_button");
+	var universe = $('body');
+	var startBtn = $("#start_button");
+	var controls = $('#select_control');
 	var cross = $("#cross");
 	var spaceShip = $("#spaceship");
 	var openSpace = document.querySelector("#container");
 	var screenWidth = $("#container").width();
 	var screenHeight = $("#container").height();
-	var gameOverIn = $(".gameover");
+	var gameOverScreen = $(".gameover");
 	var scoreIn = document.querySelector(".yourscore");
 	var mainMusic = new Audio("audio/main_theme.mp3");
 	var gameScore = 0;
 	var shipX = 50;
 
 	startBtn.on("click", function() {
-		game();
+		selectControl();
 	});
+
+	function selectControl() {
+		startBtn.hide();
+		controls.addClass('active');
+		$('.select_control_btn.keyboard').on("click", function() {
+			sessionStorage.setItem('controls', 'keyboard');
+			game();
+		});
+		$('.select_control_btn.mouse').on("click", function() {
+			sessionStorage.setItem('controls', 'mouse');
+			game();
+		});
+	}
 
 	function getRndInteger(min, max) {
 		return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -25,14 +40,19 @@ $(function(){
 		$('#container').append(newAlien);
 	}
 
-	function uLoose() {
-		gameOverIn.show();
+	function uLoose(status) {
+		gameOverScreen.show();
+		status == 'win' ? gameOverScreen.addClass('win') : gameOverScreen.addClass('fail');
 		scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
 		mainMusic.pause();
 	}
 
 	function game() {
-		startBtn.hide();
+		controls.hide();
+		var controlStatus = sessionStorage.getItem('controls');
+		$('#container').addClass('we-are-in-open-space-now');
+		universe.addClass('fight');
+		spaceShip.show();
 		cross.show();
 		var gameScoreDisp = document.createElement("span");
 		gameScoreDisp.className = "game_score";
@@ -47,42 +67,46 @@ $(function(){
 		mainMusic.play();
 		mainMusic.loop = true;
 
-		openSpace.style.cursor = "none";
-
 		//SPACESHIP MOVE
 
 		//MOUSE MOVE
-		   document.addEventListener("mousemove", function(e){
-					shipX = e.clientX;
-		       var mouseX = e.clientX;
-					 var mouseY = e.clientY;
-					 function moveShip() {
-						spaceShip.css("left", shipX - 50);
-						cross.css("left", mouseX - 15);
-						cross.css("top", mouseY - 15);
-				 	}
-					 moveShip();
-		   });
-
+		if(controlStatus == 'mouse') {
+			document.addEventListener("mousemove", function(e){
+				shipX = e.clientX;
+				 var mouseX = e.clientX;
+				 var mouseY = e.clientY;
+				 function moveShip() {
+					spaceShip.css("left", shipX - 50);
+					cross.css("left", mouseX - 15);
+					cross.css("top", mouseY - 15);
+				 }
+				 moveShip();
+		 });
+		}
+		
 		//KEYBOARDMOVE
 
-		// document.addEventListener("keydown", (event) => {
-		// 	if (event.key == "ArrowRight") {
-		// 		if (shipX < screenWidth) {
-		// 			shipX += 30;
-		// 			spaceShip.css("left", shipX - 50);
-		// 		}
-		// 	} else if (event.key == "ArrowLeft") {
-		// 		if (shipX > 0) {
-		// 			shipX -= 30;
-		// 			spaceShip.css("left", shipX - 50);
-		// 		}
-		// 	}
-		// });
-
+		if(controlStatus == 'keyboard') {
+			cross.css("top", 100);
+			document.addEventListener("keydown", (event) => {
+				if (event.key == "ArrowRight") {
+					if (shipX < screenWidth) {
+						shipX += 30;
+						spaceShip.css("left", shipX - 50);
+						cross.css("left", shipX - 15);
+					}
+				} else if (event.key == "ArrowLeft") {
+					if (shipX > 0) {
+						shipX -= 30;
+						spaceShip.css("left", shipX - 50);
+						cross.css("left", shipX - 15);
+					}
+				}
+			});
+		}
 		//NEW ROCKETS
 
-		openSpace.addEventListener("click", function () {
+		universe.on("click", function () {
 			if (ammo < 0) {
 				ammoDisp.innerHTML = 0;
 			}
@@ -183,7 +207,7 @@ $(function(){
 			var alienPosX = alien.offset().left;
 
 			function moveAlien() {
-				var interval = setInterval(move, 2);
+				var interval = setInterval(move, 100);
 				function move() {
 					var randIndex = getRndInteger(1, 4);
 					alienPosY = alien.offset().top;
@@ -220,12 +244,11 @@ $(function(){
 			function checkOver() {
 				var alienPos = $('.aliens').offset().top;
 				if (gameScore == 1) {
-					uWin.show();
-					scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
+					uLoose("win");
 					clearInterval(interval);
 				}
 				if (alienPos > screenHeight) {
-					uLoose();
+					uLoose("fail");
 					clearInterval(interval);
 				}
 			}
