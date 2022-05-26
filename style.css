@@ -6,34 +6,24 @@ body{
 body.fight {
 	cursor: none;
 }
-#start_button{
-	position: absolute;
-	left: 50%;
-	margin-left: -150px;
-	background: white;
-	top: 100px;
-	width:300px;
-	z-index: 2;
-	border-radius: 20px;
-	padding: 25px 0;
-	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 26px;
-	border: 5px solid #444444;
-	color: #444444;
-	cursor: pointer;
-}
 #select_control .select_control_btn:hover,
-#start_button:hover{
+#start_menu .start_menu_button:hover{
 	background: #444444;
 	color: white;
 	border: 5px solid white;
 }
 #select_control .select_control_btn:active,
-#start_button:active{
+#start_menu .start_menu_button:active{
 	color: red;
 	border: 5px solid red;
 }
+#select_control .select_control_btn.active,
+#start_menu .start_menu_button.active{
+	color: green;
+	border: 5px solid green;
+	background: #444444;
+}
+#start_menu,
 #select_control {
 	position: absolute;
 	left: 50%;
@@ -41,10 +31,12 @@ body.fight {
 	transform: translate(-50%, -50%);
 	display: none;
 }
+#start_menu.active,
 #select_control.active {
 	display: flex;
 	flex-direction: row;
 }
+#start_menu .start_menu_button,
 #select_control .select_control_btn  {
 	display: flex;
 	align-items: center;
@@ -63,8 +55,30 @@ body.fight {
 	color: #444444;
 	cursor: pointer;
 }
+#start_menu .start_menu_button:not(:last-child),
 #select_control .select_control_btn:not(:last-child) {
 	margin-right: 25px;
+}
+#select_control .select_control_btn.back {
+	position: absolute;
+	left: 50%;
+	bottom: -120px;
+	transform: translateX(-50%);
+	width: 100%;
+}
+#select_control > p {
+	position: absolute;
+	left: 50%;
+	top: -220px;
+	width: 100%;
+	padding: 25px 10px;
+	transform: translateX(-50%);
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 24px;
+	background: white;
+	border: 5px solid #444444;
+	box-sizing: border-box;
 }
 .notice{
 	font-size: 12px;
@@ -218,4 +232,10 @@ body.fight {
 	font-family: 'Press Start 2P', cursive;
 	font-size: 30px;
 	color: #444444;
+}
+.explosion {
+	position: absolute;
+	width:60px;
+	height: 43px;
+	background-color: rgb(255, 0, 0);
 }
