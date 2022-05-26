@@ -20,6 +20,11 @@ $(function(){
 
 	startMenu.addClass('active');
 
+	if (currentGamer && currentGamer != 'Anon') {
+		$('.login_wrapper').addClass('logged-in');
+		$('.login_wrapper input#nickname').val(currentGamer);
+	}
+
 	$('.button.play').on("click", function() {
 		currentGamer = localStorage.getItem('activeGamer');
 		if (currentGamer && currentGamer != 'Anon') {
@@ -145,6 +150,7 @@ $(function(){
 		localStorage.setItem('activeGamer', 'Anon');
 		$('.login_wrapper').removeClass('logged-in');
 		$('.greeting-text').removeClass('active');
+		$('.login_wrapper input#nickname').val('');
 	}
 
 	function game() {
@@ -167,6 +173,10 @@ $(function(){
 		ammoDisp.innerHTML = ammo;
 		var healthDisp = document.createElement("span");
 		healthDisp.className = "health_display";
+		var userName = document.createElement("span");
+		userName.className = "nick_display";
+		userName.innerHTML = currentGamer;
+		openSpace.append(userName);
 		openSpace.append(ammoDisp);
 		openSpace.append(gameScoreDisp);
 		openSpace.append(healthDisp);

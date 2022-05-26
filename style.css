@@ -272,14 +272,24 @@ input[type="text"]:active {
 .ammo:before{
 	content: "Ammo: ";
 }
-.health_display {
+.nick_display {
 	position: fixed;
 	display: flex;
 	top: 0;
 	left: 50%;
 	transform: translateX(-50%);
+	font-family: 'Press Start 2P', cursive;
+	font-size: 26px;
+	color: green;
 	z-index: 3;
-  margin: 25px;
+}
+.health_display {
+	position: fixed;
+	display: flex;
+	top: 50px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 3;
 }
 .health_item {
 	display: block;
