@@ -15,11 +15,19 @@ $(function(){
 	var health = 1;
 	var gameIsRunning = false;
 	var controlType = localStorage.getItem('controls');
+	var currentGamer = localStorage.getItem('activeGamer');
+	var greetingText = '';
 
 	startMenu.addClass('active');
 
 	$('.button.play').on("click", function() {
-		controlType ? game() : selectControl();
+		currentGamer = localStorage.getItem('activeGamer');
+		if (currentGamer && currentGamer != 'Anon') {
+			controlType ? game() : selectControl();
+		} else {
+			$('.greeting-text').text('Who are you? Login first!');
+			$('.greeting-text').addClass('active');
+		}
 	});
 
 	$('.button.options').on("click", function() {
@@ -29,6 +37,10 @@ $(function(){
 	$('.button.back').on("click", function() {
 		location.reload();
 	});
+
+	$('.login_wrapper .nickname_submit').on("click", login);
+
+	$('.login_wrapper .button.logout').on("click", logout);
 
 	function selectControl() {
 		startMenu.removeClass('active');
@@ -90,6 +102,49 @@ $(function(){
 			healthItem.className = "health_item";
 			$('.health_display').append(healthItem);
 		}
+	}
+
+	function login() {
+		var logWrap = $('.login_wrapper');
+		var nickInput = $('.login_wrapper input#nickname');
+		var greeting = $('.greeting-text');
+		var nick = nickInput.val();
+		var checkNick = localStorage.getItem(nick);
+		if (nick == '') {
+			logWrap.addClass('error');
+			greetingText = 'Type something, you moron...';
+			console.error('Type something, you moron...');
+		} else if (checkNick && checkNick == 'nickname') {
+			localStorage.setItem('activeGamer', nick);
+			logWrap.removeClass('error');
+			logWrap.addClass('logged-in');
+			greetingText = 'Welcome back, ' + nick;
+			console.log('Welcome back, ' + nick);
+		} else if (checkNick) {
+			logWrap.addClass('error');
+			greetingText = 'Fuck you, asshole!';
+			console.error('Fuck you, asshole!');
+		} else {
+			localStorage.setItem(nick, 'nickname');
+			localStorage.setItem('activeGamer', nick);
+			logWrap.removeClass('error');
+			logWrap.addClass('logged-in');
+			greetingText = 'Good to see you, ' + nick + '! Come on in!';
+			console.log('Good to see you, ' + nick + '! Come on in!');
+		}
+		greeting.text(greetingText);
+		greeting.addClass('active');
+		nickInput.on("change", function() {
+			greeting.removeClass('active');
+			logWrap.removeClass('error');
+			logWrap.removeClass('logged-in');
+		});
+	}
+
+	function logout() {
+		localStorage.setItem('activeGamer', 'Anon');
+		$('.login_wrapper').removeClass('logged-in');
+		$('.greeting-text').removeClass('active');
 	}
 
 	function game() {
