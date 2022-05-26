@@ -1,6 +1,16 @@
 $(function(){
-	$('#container').addClass('yo');
 	var startBtn = $(".start_button");
+	var cross = $("#cross");
+	var spaceShip = $("#spaceship");
+	var openSpace = document.querySelector("#container");
+	var screenWidth = $("#container").width();
+	var screenHeight = $("#container").height();
+	var gameOverIn = $(".gameover");
+	var scoreIn = document.querySelector(".yourscore");
+	var mainMusic = new Audio("audio/main_theme.mp3");
+	var gameScore = 0;
+	var shipX = 50;
+
 	startBtn.on("click", function() {
 		game();
 	});
@@ -15,29 +25,25 @@ $(function(){
 		$('#container').append(newAlien);
 	}
 
+	function uLoose() {
+		gameOverIn.show();
+		scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
+		mainMusic.pause();
+	}
+
 	function game() {
 		startBtn.hide();
-		var openSpace = document.querySelector("#container");
-		var screenSize = openSpace.getBoundingClientRect();
-		var screenWidth = screenSize.width;
-		var screenHeight = screenSize.height;
-		var spaceShip = document.getElementById("spaceship");
-		var shipX = 50;
-		var gameScore = 0;
+		cross.show();
 		var gameScoreDisp = document.createElement("span");
 		gameScoreDisp.className = "game_score";
 		openSpace.appendChild(gameScoreDisp);
 		gameScoreDisp.innerHTML = gameScore;
-		var gameOverIn = document.querySelector(".gameover");
-		var scoreIn = document.querySelector(".yourscore");
 		var ammo = 30;
 		var ammoDisp = document.createElement("span");
 		ammoDisp.className = "ammo";
 		openSpace.appendChild(ammoDisp);
 		ammoDisp.innerHTML = ammo;
-		var uWin = document.querySelector(".youwin");
-
-		var mainMusic = new Audio("audio/main_theme.mp3");
+		var uWin = $(".youwin");
 		mainMusic.play();
 		mainMusic.loop = true;
 
@@ -46,30 +52,33 @@ $(function(){
 		//SPACESHIP MOVE
 
 		//MOUSE MOVE
-		//    document.addEventListener("mousemove", function(e){
-		//        shipX = e.clientX
-		//    });
-		//        function moveShip(){
-		//        spaceShip.style.left = shipX - 50 + 'px';
-		//    }
-		//    setInterval(moveShip, 1);
+		   document.addEventListener("mousemove", function(e){
+					shipX = e.clientX;
+		       var mouseX = e.clientX;
+					 var mouseY = e.clientY;
+					 function moveShip() {
+						spaceShip.css("left", shipX - 50);
+						cross.css("left", mouseX - 15);
+						cross.css("top", mouseY - 15);
+				 	}
+					 moveShip();
+		   });
 
 		//KEYBOARDMOVE
 
-		document.addEventListener("keydown", (event) => {
-			var keyName = event.key;
-			if (event.key == "ArrowRight") {
-				if (shipX < screenWidth) {
-					shipX += 30;
-					spaceShip.style.left = shipX - 50 + "px";
-				}
-			} else if (event.key == "ArrowLeft") {
-				if (shipX > 0) {
-					shipX -= 30;
-					spaceShip.style.left = shipX - 50 + "px";
-				}
-			}
-		});
+		// document.addEventListener("keydown", (event) => {
+		// 	if (event.key == "ArrowRight") {
+		// 		if (shipX < screenWidth) {
+		// 			shipX += 30;
+		// 			spaceShip.css("left", shipX - 50);
+		// 		}
+		// 	} else if (event.key == "ArrowLeft") {
+		// 		if (shipX > 0) {
+		// 			shipX -= 30;
+		// 			spaceShip.css("left", shipX - 50);
+		// 		}
+		// 	}
+		// });
 
 		//NEW ROCKETS
 
@@ -164,57 +173,63 @@ $(function(){
 		//ALIENS
 
 		function createAlien() {
-			var moveAlienY = 0;
 			createAlienObject();
-			var newAlien = $('.aliens')
-			var maxWidth = $('#container').width();
-			var randomN = getRndInteger(1, maxWidth - 61);
-			newAlien.css("left", randomN);
+			var alien = $(".aliens");
+			var randomPosition = getRndInteger(1, screenWidth - 61);
+			alien.css("left", randomPosition);
 
 			//MOVE THE ALIEN
-			var statusX = "right";
-			var getAlien = $(".aliens");
-			var moveAlienX = getAlien.offset().left;
+			var directionX = randomPosition % 2 ? "right" : "left";
+			var alienPosX = alien.offset().left;
 
 			function moveAlien() {
-				var interval = setInterval(move, 10);
+				var interval = setInterval(move, 2);
 				function move() {
-					moveAlienY = getAlien.offset().top;
-					if (statusX == "right") {
-						moveAlienX = moveAlienX + 4;
-					} else if (statusX == "left") {
-						moveAlienX = moveAlienX - 4;
+					var randIndex = getRndInteger(1, 4);
+					alienPosY = alien.offset().top;
+					if (directionX == "right") {
+						alienPosX = alienPosX + randIndex;
+					} else if (directionX == "left") {
+						alienPosX = alienPosX - randIndex;
 					}
-					if (moveAlienX >= screenWidth - 60) {
-						statusX = "left";
-					} else if (moveAlienX <= 0) {
-						statusX = "right";
+					if (alienPosX >= screenWidth - 60) {
+						directionX = "left";
+					} else if (alienPosX <= 0) {
+						directionX = "right";
 					}
-					moveAlienY++;
-					getAlien.css("left", moveAlienX);
-					getAlien.css("top", moveAlienY);
+					if (alienPosY > screenHeight) {
+						clearInterval(interval);
+					}
+					alien.on("change", function() {
+						console.log('remove');
+					});
+				// console.log(alienPosY, screenHeight);
+
+					alienPosY++;
+					alien.css("left", alienPosX);
+					alien.css("top", alienPosY);
 				}
 			}
 			moveAlien();
-
-			// GAMEOVER
-			function gameOver() {
-				// console.log(getAlien.style.top);
-				if (moveAlienY > screenHeight) {
-					gameOverIn.style.show();
-					scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
-					mainMusic.pause();
-				}
-			}
-			setInterval(gameOver, 1);
-			function youWinThisGame() {
-				if (gameScore == 100) {
-					uWin.style.show();
-					scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
-				}
-			}
-			setInterval(youWinThisGame, 1);
 		}
 		createAlien();
+
+		// GAMEOVER
+		function gameStatus() {
+			var interval = setInterval(checkOver, 100);
+			function checkOver() {
+				var alienPos = $('.aliens').offset().top;
+				if (gameScore == 1) {
+					uWin.show();
+					scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
+					clearInterval(interval);
+				}
+				if (alienPos > screenHeight) {
+					uLoose();
+					clearInterval(interval);
+				}
+			}
+		}
+		gameStatus();
 	}
 });

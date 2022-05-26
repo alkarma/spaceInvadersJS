@@ -36,9 +36,31 @@ body{
 	border: 5px solid red;
 }
 #container{
+	position: relative;
 	width: 100%;
 	height: 100vh;
 	background: url(pics/space3.jpg);
+}
+#cross {
+	position: absolute;
+	display: none;
+	width: 30px;
+	height: 30px;
+}
+#cross::before,
+#cross::after {
+	content: ' ';
+	display: block;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 100%;
+	height: 4px;
+	background-color: red;
+}
+#cross::after {
+	transform: translate(-50%, -50%) rotate(90deg); 
 }
 #spaceship{
 	position: absolute;
