@@ -1,55 +1,55 @@
 $(function(){
-	var universe = $('body');
+	var universe = $('.space-wrap');
 	var startMenu = $("#start_menu");
 	var controls = $('#select_control');
 	var cross = $("#cross");
 	var spaceShip = $("#spaceship");
-	var openSpace = $("#container");
-	var screenWidth = $("#container").width();
-	var screenHeight = $("#container").height();
+	var openSpace = $("#open_space");
+	var screenWidth = $("#open_space").width();
+	var screenHeight = $("#open_space").height();
 	var gameOverScreen = $(".gameover");
 	var scoreIn = document.querySelector(".yourscore");
 	var mainMusic = new Audio("audio/main_theme.mp3");
 	var gameScore = 0;
-	var shipX = 50;
-	var health = 5;
+	var shipX = 0;
+	var health = 1;
 	var gameIsRunning = false;
 	var controlType = localStorage.getItem('controls');
 
 	startMenu.addClass('active');
 
-	$('.start_menu_button.play').on("click", function() {
+	$('.button.play').on("click", function() {
 		controlType ? game() : selectControl();
 	});
 
-	$('.start_menu_button.options').on("click", function() {
+	$('.button.options').on("click", function() {
 		selectControl();
+	});
+
+	$('.button.back').on("click", function() {
+		location.reload();
 	});
 
 	function selectControl() {
 		startMenu.removeClass('active');
 		controls.addClass('active');
 		if (controlType == 'mouse') {
-			$('.select_control_btn.mouse').addClass('active');
+			$('.button.mouse').addClass('active');
 		}
 		if (controlType == 'keyboard') {
-			$('.select_control_btn.keyboard').addClass('active');
+			$('.button.keyboard').addClass('active');
 		}
-		$('.select_control_btn.keyboard').on("click", function() {
+		$('.button.keyboard').on("click", function() {
 			localStorage.setItem('controls', 'keyboard');
 			controlType = "keyboard";
-			$('.select_control_btn.keyboard').addClass('active');
-			$('.select_control_btn.mouse').removeClass('active');
+			$('.button.keyboard').addClass('active');
+			$('.button.mouse').removeClass('active');
 		});
-		$('.select_control_btn.mouse').on("click", function() {
+		$('.button.mouse').on("click", function() {
 			localStorage.setItem('controls', 'mouse');
 			controlType = "mouse";
-			$('.select_control_btn.mouse').addClass('active');
-			$('.select_control_btn.keyboard').removeClass('active');
-		});
-		$('.select_control_btn.back').on("click", function() {
-			controls.removeClass('active');
-			startMenu.addClass('active');
+			$('.button.mouse').addClass('active');
+			$('.button.keyboard').removeClass('active');
 		});
 	}
 
@@ -63,7 +63,7 @@ $(function(){
 		function removeExp() {
 			$('#'+id).remove();
 		}
-		// setTimeout(removeExp, 2000);
+		setTimeout(removeExp, 1000);
 	}
 
 	function getRndInteger(min, max) {
@@ -73,38 +73,52 @@ $(function(){
 	function createAlienObject() {
 		var newAlien = document.createElement("div");
 		newAlien.className = "aliens";
-		$('#container').append(newAlien);
+		$('#open_space').append(newAlien);
 	}
 
 	function gameOver(status) {
-		gameOverScreen.show();
+		gameOverScreen.addClass('active');
 		status == 'win' ? gameOverScreen.addClass('win') : gameOverScreen.addClass('fail');
 		scoreIn.innerHTML = "YOUR SCORE: " + gameScore;
 		mainMusic.pause();
+	}
+
+	function checkHealth() {
+		$('.health_display').empty();
+		for(let i = 0; i < health ; i++) {
+			var healthItem = document.createElement("span");
+			healthItem.className = "health_item";
+			$('.health_display').append(healthItem);
+		}
 	}
 
 	function game() {
 		gameIsRunning = true;
 		controls.removeClass('active');
 		startMenu.removeClass('active');
-		$('#container').addClass('we-are-in-open-space-now');
+		openSpace.addClass('we-are-in-open-space-now');
 		universe.addClass('fight');
 		spaceShip.show();
+		shipX = spaceShip.offset().left + 50;
 		cross.show();
-		var gameScoreDisp = document.createElement("span");
-		gameScoreDisp.className = "game_score";
-		openSpace.append(gameScoreDisp);
-		gameScoreDisp.innerHTML = gameScore;
-		var ammo = 1000;
-		var ammoDisp = document.createElement("span");
-		ammoDisp.className = "ammo";
-		openSpace.append(ammoDisp);
-		ammoDisp.innerHTML = ammo;
 		mainMusic.play();
 		mainMusic.loop = true;
-
+		var gameScoreDisp = document.createElement("span");
+		gameScoreDisp.className = "game_score";
+		gameScoreDisp.innerHTML = gameScore;
+		var ammo = 100;
+		var ammoDisp = document.createElement("span");
+		ammoDisp.className = "ammo";
+		ammoDisp.innerHTML = ammo;
+		var healthDisp = document.createElement("span");
+		healthDisp.className = "health_display";
+		openSpace.append(ammoDisp);
+		openSpace.append(gameScoreDisp);
+		openSpace.append(healthDisp);
+		checkHealth();
+		
 		// PAUSE
-		universe.on("keydown", (e) => {
+		$('body').on("keydown", (e) => {
 			if (e.key == 'Escape') {
 				alert('Game on pause. Click "OK" to continue.');
 			}
@@ -150,7 +164,7 @@ $(function(){
 
 		//NEW ROCKETS
 
-		universe.on("click", function () {
+		universe.on("mousedown", function () {
 			if (ammo < 0) {
 				ammoDisp.innerHTML = 0;
 			}
@@ -266,6 +280,7 @@ $(function(){
 				}
 				if (alienPosY > screenHeight) {
 					health--;
+					checkHealth();
 					clearInterval(moveInterval);
 					alien.remove();
 					health > 0 ? createAlien() : '';

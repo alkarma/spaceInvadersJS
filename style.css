@@ -3,25 +3,8 @@ body{
 	margin: 0;
 	overflow: hidden;
 }
-body.fight {
+.space-wrap.fight {
 	cursor: none;
-}
-#select_control .select_control_btn:hover,
-#start_menu .start_menu_button:hover{
-	background: #444444;
-	color: white;
-	border: 5px solid white;
-}
-#select_control .select_control_btn:active,
-#start_menu .start_menu_button:active{
-	color: red;
-	border: 5px solid red;
-}
-#select_control .select_control_btn.active,
-#start_menu .start_menu_button.active{
-	color: green;
-	border: 5px solid green;
-	background: #444444;
 }
 #start_menu,
 #select_control {
@@ -36,8 +19,7 @@ body.fight {
 	display: flex;
 	flex-direction: row;
 }
-#start_menu .start_menu_button,
-#select_control .select_control_btn  {
+.button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -55,11 +37,24 @@ body.fight {
 	color: #444444;
 	cursor: pointer;
 }
-#start_menu .start_menu_button:not(:last-child),
-#select_control .select_control_btn:not(:last-child) {
+.button:not(:last-child) {
 	margin-right: 25px;
 }
-#select_control .select_control_btn.back {
+.button:hover {
+	background: #444444;
+	color: white;
+	border: 5px solid white;
+}
+.button:active{
+	color: red;
+	border: 5px solid red;
+}
+.button.active{
+	color: green;
+	border: 5px solid green;
+	background: #444444;
+}
+#select_control .back {
 	position: absolute;
 	left: 50%;
 	bottom: -120px;
@@ -86,21 +81,23 @@ body.fight {
 	margin-top: 10px;
 }
 
-#container{
+#open_space {
 	position: relative;
 	width: 100%;
 	height: 100vh;
 	background: url(pics/space3.jpg);
 }
-#container.we-are-in-open-space-now {
+#open_space.we-are-in-open-space-now {
 	pointer-events: none;
 	cursor: none;
 }
 #cross {
 	position: absolute;
 	display: none;
-	width: 30px;
-	height: 30px;
+	width: 50px;
+	height: 50px;
+	left: calc(50% - 15px);
+	top: calc(50% - 15px);
 	cursor: none;
 }
 #cross::before,
@@ -112,16 +109,27 @@ body.fight {
 	top: 50%;
 	transform: translate(-50%, -50%);
 	width: 100%;
-	height: 4px;
+	height: 2px;
 	background-color: red;
 }
 #cross::after {
 	transform: translate(-50%, -50%) rotate(90deg); 
 }
+#cross span {
+	display: block;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 70%;
+	height: 70%;
+	border-radius: 50%;
+	border: 1px solid red;
+	transform: translate(-50%, -50%);
+}
 #spaceship{
 	position: absolute;
 	bottom: 0;
-	left: 0;
+	left: calc(50% - 50px);
 	width: 100px;
 	height: 20px;
 	background: #4B4E31;
@@ -189,13 +197,36 @@ body.fight {
 	font-size: 26px;
 	color: green;
 	z-index: 3;
-    margin: 25px;
+  margin: 25px;
 }
 .ammo:before{
 	content: "Ammo: ";
 }
-.gameover{
+.health_display {
+	position: fixed;
+	display: flex;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 3;
+  margin: 25px;
+}
+.health_item {
+	display: block;
+	width: 40px;
+	height: 35px;
+	background-image: url(pics/health.png);
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+.health_item:not(:last-child) {
+	margin-right: 7px;
+}
+.gameover {
 	display: none;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 	position: fixed;
 	z-index: 8;
 	top: 0;
@@ -206,6 +237,9 @@ body.fight {
 	border: 5px solid #444444;
 	border-radius: 25px;
 	box-sizing: border-box;
+}
+.gameover.active {
+	display: flex;
 }
 .gameover .win,
 .gameover .fail {
@@ -237,5 +271,22 @@ body.fight {
 	position: absolute;
 	width:60px;
 	height: 43px;
-	background-color: rgb(255, 0, 0);
+}
+
+.explosion::before {
+	content: ' ';
+	display: block;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	animation-name: exp;
+  animation-duration: 1s;
+}
+
+@keyframes exp {
+  0%  {width: 20px; height: 20px; background-color:rgb(255, 81, 1); box-shadow: 0px 0px 0px 0px rgb(255 0 51 / 51%);}
+  50% {width: 40px; height: 40px; background-color:rgba(255, 251, 0, 0.5); box-shadow: 0px 0px 50px 50px rgb(255 0 51 / 51%);}
+	100% {width: 60px; height: 60px; background-color:rgba(255, 251, 0, 0); box-shadow: 0px 0px 110px 20px rgb(255 0 51 / 1%);}
 }

@@ -8,30 +8,36 @@
 	<script src="script.js"></script>
 </head>
 <body>
-	<div id="container">
-		<div id="spaceship"></div>
-		<div id="cross"></div>
+	<div class="space-wrap">	
+		<div id="open_space">
+			<div id="spaceship"></div>
+			<div id="cross">
+				<span></span>
+			</div>
+		</div>
 	</div>
+
 	<div id="start_menu">
-		<div class="start_menu_button play">
+		<div class="button play">
 			<span>Play game</span>
 		</div>
-		<div class="start_menu_button options">
+		<div class="button options">
 			<span>Options</span>
 		</div>
 	</div>
 	<div id="select_control">
 		<p>Select your control type</p>
-		<div class="select_control_btn back"><span>Back to Main menu</span></div>
-		<div class="select_control_btn keyboard"><span>Keyboard<br>+<br>Mouse</span></div>
-		<div class="select_control_btn mouse"><span>Mouse</span></div>
+		<div class="button back"><span>Back to Main menu</span></div>
+		<div class="button keyboard"><span>Keyboard<br>+<br>Mouse</span></div>
+		<div class="button mouse"><span>Mouse</span></div>
 	</div>
 	<div class="gameover">
 		<p class="gameover_inscription fail">GAME OVER!</p>
 		<p class="gameover_inscription win">CONGRATULATIONS!!!</p>
 		<p class="yourscore"></p>
-		<p class="gameover_notice fail">To start a new game just restart the page <br> <br> <br> Or press F5</p>
+		<p class="gameover_notice fail">You suck!</p>
 		<p class="gameover_notice win">You win this game! <br> <br> <br> You scored 100 points in this game ... Seriously? Don't you have a personal life?</p>
+		<div class="button back">back to main menu</div>
 	</div>
 </body>
 </html>
