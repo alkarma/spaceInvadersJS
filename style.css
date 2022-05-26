@@ -2,9 +2,11 @@
 body{
 	margin: 0;
 	overflow: hidden;
-/*	cursor: none;*/
 }
-.start_button{
+body.fight {
+	cursor: none;
+}
+#start_button{
 	position: absolute;
 	left: 50%;
 	margin-left: -150px;
@@ -21,31 +23,71 @@ body{
 	color: #444444;
 	cursor: pointer;
 }
+#select_control .select_control_btn:hover,
+#start_button:hover{
+	background: #444444;
+	color: white;
+	border: 5px solid white;
+}
+#select_control .select_control_btn:active,
+#start_button:active{
+	color: red;
+	border: 5px solid red;
+}
+#select_control {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	display: none;
+}
+#select_control.active {
+	display: flex;
+	flex-direction: row;
+}
+#select_control .select_control_btn  {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-transform: uppercase;
+	text-align: center;
+	background: white;
+	width:300px;
+	z-index: 2;
+	border-radius: 20px;
+	padding: 25px 0;
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 26px;
+	border: 5px solid #444444;
+	color: #444444;
+	cursor: pointer;
+}
+#select_control .select_control_btn:not(:last-child) {
+	margin-right: 25px;
+}
 .notice{
 	font-size: 12px;
 	display: block;
 	margin-top: 10px;
 }
-.start_button:hover{
-	background: #444444;
-	color: white;
-	border: 5px solid white;
-}
-.start_button:active{
-	color: red;
-	border: 5px solid red;
-}
+
 #container{
 	position: relative;
 	width: 100%;
 	height: 100vh;
 	background: url(pics/space3.jpg);
 }
+#container.we-are-in-open-space-now {
+	pointer-events: none;
+	cursor: none;
+}
 #cross {
 	position: absolute;
 	display: none;
 	width: 30px;
 	height: 30px;
+	cursor: none;
 }
 #cross::before,
 #cross::after {
@@ -69,6 +111,7 @@ body{
 	width: 100px;
 	height: 20px;
 	background: #4B4E31;
+	display: none;
 }
 #spaceship:after{
 	content: "";
@@ -150,18 +193,13 @@ body{
 	border-radius: 25px;
 	box-sizing: border-box;
 }
-.youwin{
-    display: none;
-	position: fixed;
-	z-index: 9;
-	top: 0;
-	height: 0;
-	width: 100%;
-	height: 100%;
-	background-color: #f7f7f7;
-	border: 5px solid #444444;
-	border-radius: 25px;
-	box-sizing: border-box;
+.gameover .win,
+.gameover .fail {
+	display: none;
+}
+.gameover.fail .fail,
+.gameover.win .win {
+	display: block;
 }
 .yourscore{
 	text-align: center;
