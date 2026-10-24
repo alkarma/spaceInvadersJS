@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "space-invaders",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/serve.js"],
       "port": 8080
     }
   ]

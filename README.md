@@ -11,7 +11,8 @@ The game is served as ES modules, so it needs an HTTP server — opening
 npm start
 ```
 
-Then open http://localhost:8080. There are no dependencies and no build step.
+Then open http://localhost:8080. There are no dependencies and no build step;
+`tools/serve.js` is a static file server on Node's own http module.
 
 ```
 npm test
