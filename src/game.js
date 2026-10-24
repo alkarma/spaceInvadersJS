@@ -1,6 +1,7 @@
 import {
-	SHIP, ROCKET, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION,
+	SHIP, ROCKET, BOMB, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION,
 	waveLayout, isBossWave, bossHp,
+	BOMB_SPEED, BOMB_INTERVAL, BOSS_FIRE_RATE, INVULN_TIME,
 	ROCKET_SPEED, SHIP_KEY_SPEED, SHOOT_COOLDOWN,
 	START_AMMO, START_HEALTH, SCORE_TO_WIN, AMMO_BONUSES, WAVE_CLEAR_AMMO,
 } from './config.js';
@@ -28,6 +29,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		controlType,
 		ship: { x: width / 2 },
 		bullets: [],
+		bombs: [],
 		aliens: [],
 		explosions: [],
 		score: 0,
@@ -35,6 +37,8 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		health: START_HEALTH,
 		wave: 0,
 		shootTimer: 0,
+		bombTimer: 0,
+		invuln: 0,
 		animTimer: 0,
 		frame: 0,
 		formation: { dir: 1, size: 0 },
@@ -65,6 +69,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 	function startWave() {
 		state.wave++;
 		state.formation.dir = 1;
+		state.bombTimer = bombInterval();
 
 		if (isBossWave(state.wave)) {
 			const spec = ENEMY_TYPES.boss;
@@ -215,6 +220,76 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		}
 	}
 
+	// Only an alien with nothing of its own below it can drop a bomb, so the
+	// formation fires from its front edge instead of from the middle of itself.
+	function frontLine() {
+		return state.aliens.filter((alien) => !state.aliens.some((other) => (
+			other !== alien &&
+			other.y > alien.y &&
+			other.x < alien.x + alien.w &&
+			other.x + other.w > alien.x
+		)));
+	}
+
+	function bombInterval() {
+		const spaced = BOMB_INTERVAL.base - BOMB_INTERVAL.perWave * (state.wave - 1);
+		const interval = Math.max(BOMB_INTERVAL.min, spaced);
+		return isBossWave(state.wave) ? interval / BOSS_FIRE_RATE : interval;
+	}
+
+	function updateEnemyFire(dt) {
+		if (!state.aliens.length) return;
+		state.bombTimer -= dt;
+		if (state.bombTimer > 0) return;
+		state.bombTimer = bombInterval();
+
+		const shooters = frontLine();
+		const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+		if (!shooter) return;
+		state.bombs.push({
+			x: shooter.x + shooter.w / 2 - BOMB.width / 2,
+			y: shooter.y + shooter.h,
+			w: BOMB.width,
+			h: BOMB.height,
+		});
+		playSound('shoot');
+	}
+
+	function shipHitbox() {
+		const box = SHIP.hitbox;
+		return {
+			x: state.ship.x + box.dx,
+			y: state.height + box.dy,
+			w: box.w,
+			h: box.h,
+		};
+	}
+
+	function updateBombs(dt) {
+		if (state.invuln > 0) state.invuln = Math.max(0, state.invuln - dt);
+
+		for (const bomb of state.bombs) {
+			bomb.y += BOMB_SPEED * dt;
+		}
+
+		const ship = shipHitbox();
+		const spent = new Set();
+		for (const bomb of state.bombs) {
+			if (bomb.y > state.height) {
+				spent.add(bomb);
+				continue;
+			}
+			if (state.invuln > 0 || !overlaps(bomb, ship)) continue;
+			spent.add(bomb);
+			state.health--;
+			state.invuln = INVULN_TIME;
+			addExplosion(state.ship.x - ALIEN.width / 2, state.height - SHIP.height);
+			playSound('explosion');
+			emitStats();
+		}
+		if (spent.size) state.bombs = state.bombs.filter((b) => !spent.has(b));
+	}
+
 	function grantAmmoBonus() {
 		let granted = 0;
 		while (pendingBonuses.length && state.score >= pendingBonuses[0]) {
@@ -288,6 +363,8 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		updateShooting(dt);
 		updateBullets(dt);
 		updateAliens(dt);
+		updateEnemyFire(dt);
+		updateBombs(dt);
 		updateCollisions();
 		updateExplosions(dt);
 		checkFinish();

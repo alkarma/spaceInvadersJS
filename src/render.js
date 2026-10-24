@@ -1,4 +1,4 @@
-import { SHIP, ROCKET, ALIEN, ENEMY_TYPES, CROSS, EXPLOSION, BACKGROUND } from './config.js';
+import { SHIP, ROCKET, BOMB, ALIEN, ENEMY_TYPES, CROSS, EXPLOSION, BACKGROUND } from './config.js';
 import { input } from './input.js';
 
 function loadImage(src) {
@@ -62,11 +62,29 @@ export function createRenderer(canvas, assets) {
 		ctx.fillRect(0, 0, width, height);
 	}
 
-	function drawShip(x, height) {
+	function drawShip(x, height, invuln) {
+		ctx.save();
+		if (invuln > 0) {
+			// Blink while the hit grace period runs, so it is obvious why bombs
+			// are passing straight through.
+			ctx.globalAlpha = Math.floor(invuln * 12) % 2 ? 0.25 : 0.8;
+		}
 		ctx.fillStyle = SHIP.color;
 		for (const part of SHIP.parts) {
 			ctx.fillRect(Math.round(x + part.dx), height + part.dy, part.w, part.h);
 		}
+		ctx.restore();
+	}
+
+	function drawBombs(bombs) {
+		ctx.save();
+		ctx.fillStyle = BOMB.color;
+		ctx.shadowColor = BOMB.glow;
+		ctx.shadowBlur = 12;
+		for (const bomb of bombs) {
+			ctx.fillRect(Math.round(bomb.x), Math.round(bomb.y), bomb.w, bomb.h);
+		}
+		ctx.restore();
 	}
 
 	function drawBullets(bullets) {
@@ -175,7 +193,8 @@ export function createRenderer(canvas, assets) {
 		if (!state) return;
 		drawAliens(state.aliens, state.frame);
 		drawBullets(state.bullets);
-		drawShip(state.ship.x, state.height);
+		drawBombs(state.bombs);
+		drawShip(state.ship.x, state.height, state.invuln);
 		drawExplosions(state.explosions);
 		if (!state.finished) drawCrosshair(state.controlType, state.ship.x);
 	}

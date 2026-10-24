@@ -6,7 +6,7 @@ import { input } from '../src/input.js';
 import { explosionLook } from '../src/render.js';
 import {
 	SCORE_TO_WIN, AMMO_BONUSES, START_AMMO, START_HEALTH, SHIP, FORMATION, waveLayout,
-	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, isBossWave,
+	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, isBossWave, INVULN_TIME,
 } from '../src/config.js';
 
 // src/game.js deliberately has no DOM dependency, so the rules can be checked here.
@@ -274,6 +274,81 @@ test('a boss moves faster than a full formation', () => {
 	const bossStep = Math.abs(boss.state.aliens[0].x - before);
 
 	assert.ok(bossStep > gridStep, `boss ${bossStep} should exceed grid ${gridStep}`);
+});
+
+test('only the front line of the formation drops bombs', () => {
+	const { game } = newGame();
+	// One column, three deep: just the lowest one may fire.
+	game.state.aliens = [alienAt(300, 100), alienAt(300, 200), alienAt(300, 300)];
+	game.state.bombTimer = 0;
+	game.update(0.016);
+	assert.equal(game.state.bombs.length, 1);
+	const bomb = game.state.bombs[0];
+	assert.ok(bomb.y >= 300, `fired from the bottom alien, not y=${bomb.y}`);
+});
+
+test('a bomb that reaches the ship costs a life', () => {
+	const { game } = newGame();
+	const ship = game.state.ship.x;
+	game.state.bombs = [{ x: ship - 3, y: 800 - 30, w: 6, h: 14 }];
+	game.update(0.016);
+	assert.equal(game.state.health, START_HEALTH - 1);
+	assert.equal(game.state.bombs.length, 0, 'the bomb is spent');
+});
+
+test('a near miss over the barrel is not a hit', () => {
+	const { game } = newGame();
+	// Beside the hull, where only empty space is drawn.
+	game.state.bombs = [{ x: game.state.ship.x + 200, y: 800 - 30, w: 6, h: 14 }];
+	game.update(0.016);
+	assert.equal(game.state.health, START_HEALTH, 'no damage');
+});
+
+test('being hit grants a grace period instead of losing every life at once', () => {
+	const { game } = newGame();
+	const ship = game.state.ship.x;
+	const bombAtShip = () => ({ x: ship - 3, y: 800 - 30, w: 6, h: 14 });
+
+	game.state.bombs = [bombAtShip(), bombAtShip(), bombAtShip()];
+	game.update(0.016);
+	assert.equal(game.state.health, START_HEALTH - 1, 'a cluster costs one life');
+	assert.ok(game.state.invuln > 0, 'grace period started');
+
+	game.state.bombs = [bombAtShip()];
+	game.update(0.016);
+	assert.equal(game.state.health, START_HEALTH - 1, 'still invulnerable');
+
+	game.update(INVULN_TIME);
+	assert.equal(game.state.invuln, 0, 'grace period expires');
+	game.state.bombs = [bombAtShip()];
+	game.update(0.016);
+	assert.equal(game.state.health, START_HEALTH - 2, 'vulnerable again');
+});
+
+test('bombs that fall past the bottom are cleaned up', () => {
+	const { game } = newGame();
+	game.state.bombs = [{ x: 10, y: 790, w: 6, h: 14 }];
+	game.update(0.5);
+	assert.equal(game.state.bombs.length, 0);
+});
+
+test('a boss fires far more often than a formation', () => {
+	const grid = newGame().game;
+	grid.state.bombTimer = 0;
+	grid.update(0.016);
+	const gridInterval = grid.state.bombTimer;
+
+	const boss = newGame().game;
+	while (!isBossWave(boss.state.wave)) {
+		boss.state.aliens = [];
+		boss.update(0.016);
+	}
+	boss.state.bombTimer = 0;
+	boss.update(0.016);
+	assert.ok(
+		boss.state.bombTimer < gridInterval,
+		`boss ${boss.state.bombTimer} should be shorter than grid ${gridInterval}`,
+	);
 });
 
 test('the formation animates in lockstep on a timer', () => {

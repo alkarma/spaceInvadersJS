@@ -55,6 +55,12 @@ with more than one hit point, so it marches, steps down and breaches through
 exactly the same code; it just moves faster, carries a health bar and each one
 is tougher than the last.
 
+The formation shoots back. Only an alien with nothing of its own below it can
+drop a bomb, so fire comes from the front edge of the grid; the rate climbs with
+each wave and a boss fires several times faster still. A bomb that reaches the
+ship costs a life and starts a short grace period, during which the ship blinks
+and cannot be hit again — otherwise one cluster would take every life at once.
+
 Three enemies, all from sprites already in `pics/`: the green one walks through
 two frames and scores 1, the purple one fills the back rows and scores 3, and
 the boss reuses `spin1`/`spin2` — the same green art at 1100x790, which is why

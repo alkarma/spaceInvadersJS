@@ -9,6 +9,10 @@ export const SHIP = {
 	width: 100,
 	height: 50,
 	color: '#4B4E31',
+	// Deliberately smaller than the drawn ship: it covers the hull and the
+	// turret base but not the thin barrel, so near misses over the tip do not
+	// count as hits.
+	hitbox: { dx: -50, dy: -35, w: 100, h: 35 },
 	// offsets relative to the ship's centre x and the bottom of the screen
 	parts: [
 		{ dx: -50, dy: -20, w: 100, h: 20 }, // hull
@@ -18,6 +22,10 @@ export const SHIP = {
 };
 
 export const ROCKET = { width: 4, height: 10, color: '#ffff00', glow: 'rgba(255, 0, 51, 0.51)' };
+
+// What the aliens drop back. Red and falling, so it never reads as your own
+// shot travelling up the screen.
+export const BOMB = { width: 6, height: 14, color: '#ff4040', glow: 'rgba(255, 64, 64, 0.7)' };
 
 export const ALIEN = { width: 60, height: 43 };
 
@@ -105,6 +113,20 @@ export const START_AMMO = 100;
 export const START_HEALTH = 3;
 export const SCORE_TO_WIN = 100;
 export const WAVE_CLEAR_AMMO = 15;
+
+// --- Return fire ----------------------------------------------------------
+export const BOMB_SPEED = 230;
+// Seconds between drops. The formation fires faster every wave, down to a floor.
+export const BOMB_INTERVAL = {
+	base: 2.2,
+	perWave: 0.14,
+	min: 0.55,
+};
+// A boss is a single target, so it has to fire much more often to be a threat.
+export const BOSS_FIRE_RATE = 3.5;
+// Grace period after being hit, during which the ship blinks and cannot be hit
+// again - otherwise a cluster of bombs would take every life at once.
+export const INVULN_TIME = 1.6;
 export const WAVE_BANNER_TIME = 1.6; // seconds the "WAVE N" banner stays up
 
 // Ammo bonuses, previously a chain of `if (gameScore == N)` branches.

@@ -1,4 +1,5 @@
 import { TEXTS } from './texts.js';
+import { SCORE_TO_WIN } from './config.js';
 import * as storage from './storage.js';
 
 // Screen names for the state machine. The original had no such concept: menus
@@ -28,6 +29,12 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 	const mouseButton = document.querySelector('.button.mouse');
 
 	let screen = null;
+
+	// The win notice used to spell out "100 points" in the markup, which quietly
+	// became a lie whenever the target score was changed.
+	for (const node of document.querySelectorAll('.win_score')) {
+		node.textContent = SCORE_TO_WIN;
+	}
 
 	function setGreeting(message) {
 		greeting.textContent = message;
