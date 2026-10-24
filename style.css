@@ -1,11 +1,29 @@
 @import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
-body{
+
+/* Sizes scale with the viewport so the menus survive a phone. The original
+   used fixed 300px buttons placed with absolute offsets (top: -200px and so
+   on), which overflowed as soon as the window was narrower than ~700px. */
+:root {
+	--pixel-font: 'Press Start 2P', cursive;
+	--ink: #444444;
+	--button-width: clamp(130px, 36vw, 300px);
+	--button-font: clamp(11px, 2.6vw, 26px);
+	--button-padding: clamp(12px, 2.6vw, 25px);
+	--border: clamp(3px, 0.6vw, 5px);
+	--gap: clamp(10px, 2.4vw, 25px);
+	--hud-font: clamp(10px, 2.3vw, 26px);
+	--hud-margin: clamp(6px, 1.8vw, 25px);
+	--hud-row2: clamp(26px, 5.5vw, 50px);
+	--heart: clamp(20px, 4.6vw, 40px);
+}
+
+body {
 	margin: 0;
 	overflow: hidden;
+	background: #05010f;
 }
-.space-wrap.fight {
-	cursor: none;
-}
+
+/* --- Menus -------------------------------------------------------------- */
 #start_menu,
 #select_control {
 	position: absolute;
@@ -13,152 +31,172 @@ body{
 	top: 50%;
 	transform: translate(-50%, -50%);
 	display: none;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--gap);
+	width: max-content;
+	max-width: calc(100vw - 2 * var(--gap));
+	z-index: 2;
 }
 #start_menu.active,
 #select_control.active {
 	display: flex;
-	flex-direction: row;
 }
+
 .button {
 	display: flex;
-	text-transform: uppercase;
-}
-input[type="text"]:hover,
-input[type="text"]:focus,
-input[type="text"]:active {
-	outline: 0;
-}
-.button,
-.button + input[type="text"] {
 	align-items: center;
 	justify-content: center;
-	text-align: center;
-	background: white;
-	width:300px;
-	z-index: 2;
+	box-sizing: border-box;
+	width: var(--button-width);
+	padding: var(--button-padding) 0;
+	border: var(--border) solid var(--ink);
 	border-radius: 20px;
-	padding: 25px 0;
+	background: white;
+	color: var(--ink);
+	font-family: var(--pixel-font);
+	font-size: var(--button-font);
+	line-height: 1.5;
 	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 26px;
-	border: 5px solid #444444;
-	color: #444444;
+	text-transform: uppercase;
 	cursor: pointer;
+	/* Stops a tap from also scrolling or zooming on a touch screen. */
+	touch-action: manipulation;
 }
-.button:not(:last-child) {
-	margin-right: 25px;
-}
-.button:hover,
-.button:hover + input {
-	background: #444444;
+.button:hover {
+	background: var(--ink);
 	color: white;
-	border: 5px solid white;
+	border-color: white;
 }
-.button:active,
-.button:active + input {
+.button:active {
 	color: red;
-	border: 5px solid red;
+	border-color: red;
 }
-.button.active{
+.button.active {
+	background: var(--ink);
 	color: green;
-	border: 5px solid green;
-	background: #444444;
+	border-color: green;
 }
-.login_wrapper {
-	position: absolute;
-	top: -200px;
-	left: 0;
+
+.menu_actions,
+.control_options {
 	display: flex;
-	flex-direction: row-reverse;
+	flex-direction: row;
+	gap: var(--gap);
+}
+
+/* --- Login -------------------------------------------------------------- */
+.login_wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0;
 	width: 100%;
 }
-.button.logout {
-	position: absolute;
-	top: 86px;
-	left: 50%;
-	transform: translateX(-50%);
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
+.login_row {
+	display: flex;
+	flex-direction: row;
+	width: 100%;
 }
 #nickname {
-	flex: 70%;
+	box-sizing: border-box;
+	flex: 1 1 60%;
+	min-width: 0;
+	padding: var(--button-padding) 10px;
+	border: var(--border) solid var(--ink);
 	border-right: 0;
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
+	border-radius: 20px 0 0 20px;
+	background: white;
+	color: var(--ink);
+	font-family: var(--pixel-font);
+	font-size: var(--button-font);
+	text-align: center;
+}
+#nickname:hover,
+#nickname:focus,
+#nickname:active {
+	outline: 0;
 }
 .nickname_submit.button {
-	flex: 30%;
-	margin-right: 0;
+	flex: 0 0 40%;
+	width: auto;
+	border-radius: 0 20px 20px 0;
+}
+.button.logout {
+	border-top: 0;
 	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
+	border-top-right-radius: 0;
 }
 .login_wrapper.error #nickname,
 .login_wrapper.error .nickname_submit.button {
-	border: 5px solid red;
+	border-color: red;
 	color: red;
 }
 .login_wrapper.logged-in #nickname,
 .login_wrapper.logged-in .nickname_submit.button {
-	border: 5px solid green;
+	border-color: green;
 	color: green;
 }
 .login_wrapper:not(.logged-in) .button.logout {
 	display: none;
 }
-.greeting-text {
-	position: absolute;
-	left: 50%;
-	transform: translateX(-50%);
-	top: 180px;
+
+/* --- Text panels -------------------------------------------------------- */
+.greeting-text,
+.control_title {
+	box-sizing: border-box;
+	margin: 0;
 	width: 100%;
-	text-align: center;
+	padding: var(--button-padding) 10px;
+	border: var(--border) solid var(--ink);
 	border-radius: 20px;
-	padding: 25px 0;
+	background: white;
+	color: var(--ink);
+	font-family: var(--pixel-font);
+	font-size: clamp(11px, 2.2vw, 24px);
+	line-height: 1.6;
 	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 26px;
-	border: 5px solid #444444;
-	color: #444444;
-	background-color: white;
 }
 .greeting-text:not(.active) {
 	display: none;
 }
-#select_control .back {
-	position: absolute;
-	left: 50%;
-	bottom: -120px;
-	transform: translateX(-50%);
-	width: 100%;
-}
-#select_control > p {
-	position: absolute;
-	left: 50%;
-	top: -220px;
-	width: 100%;
-	padding: 25px 10px;
-	transform: translateX(-50%);
+
+/* --- Game over ---------------------------------------------------------- */
+.yourscore {
+	margin: 10px 0;
 	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 24px;
-	background: white;
-	border: 5px solid #444444;
-	box-sizing: border-box;
+	font-family: var(--pixel-font);
+	font-size: clamp(22px, 5vw, 50px);
+	color: var(--ink);
 }
-.notice{
-	font-size: 12px;
-	display: block;
-	margin-top: 10px;
+.gameover_inscription {
+	margin: 10px 0;
+	text-align: center;
+	font-family: var(--pixel-font);
+	font-size: clamp(18px, 4vw, 40px);
+	color: var(--ink);
+}
+.gameover_notice {
+	margin: 10px 0;
+	max-width: 90vw;
+	text-align: center;
+	font-family: var(--pixel-font);
+	font-size: clamp(12px, 2.6vw, 30px);
+	line-height: 1.8;
+	color: var(--ink);
+}
+.space-wrap.fight {
+	cursor: none;
 }
 .game_score{
 	position: fixed;
 	top: 0;
 	right: 0;
 	font-family: 'Press Start 2P', cursive;
-	font-size: 26px;
+	font-size: var(--hud-font);
 	color: green;
 	z-index: 3;
-    margin: 25px;
+	margin: var(--hud-margin);
 }
 .game_score:before{
 	content: "score: ";
@@ -168,10 +206,10 @@ input[type="text"]:active {
 	top: 0;
 	left: 0;
 	font-family: 'Press Start 2P', cursive;
-	font-size: 26px;
+	font-size: var(--hud-font);
 	color: green;
 	z-index: 3;
-  margin: 25px;
+	margin: var(--hud-margin);
 }
 .ammo:before{
 	content: "Ammo: ";
@@ -179,26 +217,26 @@ input[type="text"]:active {
 .nick_display {
 	position: fixed;
 	display: flex;
-	top: 0;
+	top: var(--hud-margin);
 	left: 50%;
 	transform: translateX(-50%);
 	font-family: 'Press Start 2P', cursive;
-	font-size: 26px;
+	font-size: var(--hud-font);
 	color: green;
 	z-index: 3;
 }
 .health_display {
 	position: fixed;
 	display: flex;
-	top: 50px;
+	top: var(--hud-row2);
 	left: 50%;
 	transform: translateX(-50%);
 	z-index: 3;
 }
 .health_item {
 	display: block;
-	width: 40px;
-	height: 35px;
+	width: var(--heart);
+	height: calc(var(--heart) * 0.875);
 	background-image: url(pics/health.png);
 	background-size: cover;
 	background-repeat: no-repeat;
@@ -233,25 +271,6 @@ input[type="text"]:active {
 .gameover.win .win {
 	display: block;
 }
-.yourscore{
-	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 50px;
-	color: #444444;
-}
-.gameover_inscription{
-	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 40px;
-	color: #444444;
-}
-.gameover_notice{
-	text-align: center;
-	font-family: 'Press Start 2P', cursive;
-	font-size: 30px;
-	color: #444444;
-}
-
 /* --- Canvas playfield -------------------------------------------------- */
 /* The ship, aliens, rockets, crosshair and explosions used to be DOM nodes
    with their own rules here; they are drawn by src/render.js now. */
@@ -262,8 +281,9 @@ input[type="text"]:active {
 	left: 0;
 	width: 100%;
 	height: 100%;
+	/* A drag on the playfield aims the ship; it must not scroll or zoom. */
+	touch-action: none;
 }
-
 /* --- HUD --------------------------------------------------------------- */
 #hud {
 	pointer-events: none;
@@ -271,7 +291,6 @@ input[type="text"]:active {
 #hud:not(.hud-visible) {
 	display: none;
 }
-
 /* --- Pause ------------------------------------------------------------- */
 #pause_screen {
 	display: none;
@@ -293,7 +312,7 @@ input[type="text"]:active {
 	margin: 0;
 	text-align: center;
 	font-family: 'Press Start 2P', cursive;
-	font-size: 60px;
+	font-size: clamp(28px, 7vw, 60px);
 	color: white;
 }
 .pause_notice {
@@ -302,17 +321,16 @@ input[type="text"]:active {
 	font-size: 18px;
 	color: #bbbbbb;
 }
-
 /* --- Wave readout and banner ------------------------------------------- */
 .wave_display {
 	position: fixed;
-	top: 50px;
+	top: var(--hud-row2);
 	right: 0;
 	font-family: 'Press Start 2P', cursive;
-	font-size: 18px;
+	font-size: calc(var(--hud-font) * 0.7);
 	color: green;
 	z-index: 3;
-	margin: 25px;
+	margin: 0 var(--hud-margin);
 }
 .wave_display:before {
 	content: "wave: ";
@@ -323,12 +341,13 @@ input[type="text"]:active {
 	top: 45%;
 	transform: translate(-50%, -50%);
 	font-family: 'Press Start 2P', cursive;
-	font-size: 48px;
+	font-size: clamp(22px, 6vw, 48px);
 	color: white;
 	text-shadow: 0 0 20px rgba(255, 0, 51, 0.8);
 	z-index: 4;
 	opacity: 0;
 	pointer-events: none;
+	white-space: nowrap;
 }
 .wave_banner.active {
 	animation: wave-banner 1.6s ease-out;
@@ -339,14 +358,14 @@ input[type="text"]:active {
 	70% { opacity: 1; }
 	100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
 }
-
 /* --- High scores -------------------------------------------------------- */
 /* The login has existed since the first version; this is what it was for. */
 .personal_best {
 	margin: 0 0 10px;
+	max-width: 92vw;
 	text-align: center;
 	font-family: 'Press Start 2P', cursive;
-	font-size: 20px;
+	font-size: clamp(11px, 2.4vw, 20px);
 	color: green;
 }
 .personal_best:empty {
@@ -363,21 +382,21 @@ input[type="text"]:active {
 }
 .leaderboard_title {
 	margin: 0 0 12px;
-	font-size: 16px;
+	font-size: clamp(10px, 2vw, 16px);
 	text-transform: uppercase;
 }
 .leaderboard_list {
 	margin: 0;
 	padding: 0;
 	list-style: none;
-	font-size: 14px;
+	font-size: clamp(9px, 1.9vw, 14px);
 	line-height: 2;
 }
 .leaderboard_list li {
 	display: flex;
 	justify-content: space-between;
 	gap: 30px;
-	min-width: 320px;
+	min-width: min(320px, 80vw);
 }
 .leaderboard_list li.you {
 	color: green;

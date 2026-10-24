@@ -14,26 +14,28 @@
 
 	<div id="start_menu">
 		<div class="login_wrapper">
-			<div class="button nickname_submit">Login</div>
-			<input id="nickname" type="text" autocomplete="off">
+			<div class="login_row">
+				<input id="nickname" type="text" autocomplete="off" placeholder="nickname">
+				<div class="button nickname_submit">Login</div>
+			</div>
 			<div class="button logout">Logout</div>
+		</div>
+		<div class="menu_actions">
+			<div class="button play"><span>Play game</span></div>
+			<div class="button options"><span>Options</span></div>
 		</div>
 		<div class="greeting-text">
 			<p class="text"></p>
 		</div>
-		<div class="button play">
-			<span>Play game</span>
-		</div>
-		<div class="button options">
-			<span>Options</span>
-		</div>
 	</div>
 
 	<div id="select_control">
-		<p>Select your control type</p>
+		<p class="control_title">Select your control type</p>
+		<div class="control_options">
+			<div class="button keyboard"><span>Keyboard<br>+<br>Mouse</span></div>
+			<div class="button mouse"><span>Mouse</span></div>
+		</div>
 		<div class="button back"><span>Back to Main menu</span></div>
-		<div class="button keyboard"><span>Keyboard<br>+<br>Mouse</span></div>
-		<div class="button mouse"><span>Mouse</span></div>
 	</div>
 
 	<div id="pause_screen">

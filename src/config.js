@@ -2,6 +2,18 @@
 // across script.js as magic values inside setInterval callbacks.
 export const VERSION = '0.3.0.1';
 
+// --- Scale ----------------------------------------------------------------
+// Every size and speed below is given in design units, for a screen about this
+// big. Smaller screens scale the whole playfield down, so the ship takes the
+// same share of the width and there is the same room to dodge in: at 100px wide
+// the ship swallowed a quarter of a phone screen.
+export const REFERENCE = { width: 900, height: 650, minScale: 0.5 };
+
+export function computeScale(width, height) {
+	const fit = Math.min(width / REFERENCE.width, height / REFERENCE.height);
+	return Math.max(REFERENCE.minScale, Math.min(1, fit));
+}
+
 // --- Geometry -------------------------------------------------------------
 // Taken from the original style.css so the game looks identical: the ship was
 // three CSS rectangles (#spaceship plus its ::before / ::after pseudo-elements).

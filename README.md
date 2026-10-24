@@ -83,4 +83,17 @@ Picked under *Options*, remembered in `localStorage`.
 - **Mouse** — the ship follows the pointer, left button fires.
 - **Keyboard + Mouse** — arrow keys move the ship, left button fires.
 
-`Esc` pauses and unpauses.
+`Esc` pauses and unpauses. Input goes through pointer events, so a finger works
+the same as a mouse: drag to aim, and the contact itself fires.
+
+## Small screens
+
+Every size and speed in `src/config.js` is a design unit for a screen about
+900x650. Anything smaller scales the whole playfield down together, so the ship
+keeps taking roughly the same share of the width — at a fixed 100px it ate a
+quarter of a phone screen and left nowhere to dodge. Waves also drop columns
+when the grid would not fit, rather than spawning aliens out of reach.
+
+The menus and HUD scale separately through CSS, with `clamp()` on the type and
+flexbox in place of the fixed 300px buttons and absolute offsets the first
+version laid them out with.

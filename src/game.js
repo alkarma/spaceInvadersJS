@@ -1,7 +1,7 @@
 import {
 	SHIP, ROCKET, BOMB, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION,
 	waveLayout, isBossWave, bossHp,
-	BOMB_SPEED, BOMB_INTERVAL, BOSS_FIRE_RATE, INVULN_TIME,
+	BOMB_SPEED, BOMB_INTERVAL, BOSS_FIRE_RATE, INVULN_TIME, computeScale,
 	ROCKET_SPEED, SHIP_KEY_SPEED, SHOOT_COOLDOWN,
 	START_AMMO, START_HEALTH, SCORE_TO_WIN, AMMO_BONUSES, WAVE_CLEAR_AMMO,
 } from './config.js';
@@ -26,6 +26,8 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 	const state = {
 		width,
 		height,
+		// Everything in config.js is a design unit; this turns it into pixels.
+		scale: computeScale(width, height),
 		controlType,
 		ship: { x: width / 2 },
 		bullets: [],
@@ -57,8 +59,8 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		state.aliens.push({
 			x,
 			y,
-			w: spec.width || ALIEN.width,
-			h: spec.height || ALIEN.height,
+			w: (spec.width || ALIEN.width) * state.scale,
+			h: (spec.height || ALIEN.height) * state.scale,
 			type,
 			hp: type === 'boss' ? bossHp(state.wave) : spec.hp,
 			maxHp: type === 'boss' ? bossHp(state.wave) : spec.hp,
@@ -73,26 +75,34 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 
 		if (isBossWave(state.wave)) {
 			const spec = ENEMY_TYPES.boss;
-			spawnAlien('boss', (state.width - spec.width) / 2, FORMATION.marginTop);
+			spawnAlien('boss', (state.width - spec.width * state.scale) / 2, FORMATION.marginTop * state.scale);
 			state.formation.size = 1;
 			onWave(state.wave);
 			return;
 		}
 
-		const { cols, rows, eliteRows } = waveLayout(state.wave);
-		// Shrink the gaps rather than the grid if the screen is too narrow.
+		const layout = waveLayout(state.wave);
+		const { rows, eliteRows } = layout;
+		// Narrow screens shrink the gaps first and then, if the grid still will
+		// not fit, drop columns - otherwise a phone spawns aliens off-screen that
+		// can never be shot.
+		const alienW = ALIEN.width * state.scale;
+		const alienH = ALIEN.height * state.scale;
+		const minGap = 4;
+		const fitCols = Math.floor((state.width - minGap) / (alienW + minGap));
+		const cols = Math.max(1, Math.min(layout.cols, fitCols));
 		const gapX = Math.min(
-			FORMATION.gapX,
-			Math.max(4, (state.width - 40 - cols * ALIEN.width) / Math.max(1, cols - 1)),
+			FORMATION.gapX * state.scale,
+			Math.max(minGap, (state.width - 40 - cols * alienW) / Math.max(1, cols - 1)),
 		);
-		const totalWidth = cols * ALIEN.width + (cols - 1) * gapX;
+		const totalWidth = cols * alienW + (cols - 1) * gapX;
 		const originX = Math.max(0, (state.width - totalWidth) / 2);
 		for (let row = 0; row < rows; row++) {
 			for (let col = 0; col < cols; col++) {
 				spawnAlien(
 					row < eliteRows ? 'elite' : 'grunt',
-					originX + col * (ALIEN.width + gapX),
-					FORMATION.marginTop + row * (ALIEN.height + FORMATION.gapY),
+					originX + col * (alienW + gapX),
+					(FORMATION.marginTop + row * (ALIEN.height + FORMATION.gapY)) * state.scale,
 				);
 			}
 		}
@@ -100,7 +110,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		onWave(state.wave);
 	}
 
-	function addExplosion(x, y, w = ALIEN.width, h = ALIEN.height) {
+	function addExplosion(x, y, w = ALIEN.width * state.scale, h = ALIEN.height * state.scale) {
 		state.explosions.push({ x, y, w, h, t: 0 });
 	}
 
@@ -117,23 +127,43 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 	function resize(w, h) {
 		// The original read the screen size once at load, so resizing the window
 		// left the movement bounds and spawn range wrong for the rest of the session.
-		const scale = state.width ? w / state.width : 1;
+		const xRatio = state.width ? w / state.width : 1;
+		const nextScale = computeScale(w, h);
+		// Everything already on screen is resized too, so a mid-game resize does
+		// not leave a full-size formation on a shrunken playfield.
+		const k = nextScale / state.scale;
 		state.width = w;
 		state.height = h;
-		state.ship.x = Math.min(state.ship.x, w - SHIP.width / 2);
-		for (const alien of state.aliens) {
-			alien.x = Math.max(0, Math.min(alien.x * scale, w - alien.w));
+		state.scale = nextScale;
+
+		for (const entity of [...state.aliens, ...state.bullets, ...state.bombs]) {
+			entity.x *= xRatio;
+			entity.y *= k;
+			entity.w *= k;
+			entity.h *= k;
 		}
+		for (const alien of state.aliens) {
+			alien.x = Math.max(0, Math.min(alien.x, w - alien.w));
+		}
+		for (const explosion of state.explosions) {
+			explosion.x *= xRatio;
+			explosion.y *= k;
+			explosion.w *= k;
+			explosion.h *= k;
+		}
+
+		const half = (SHIP.width * state.scale) / 2;
+		state.ship.x = Math.max(half, Math.min(w - half, state.ship.x * xRatio));
 	}
 
 	function updateShip(dt) {
 		if (state.controlType === 'mouse') {
 			state.ship.x = input.pointerX;
 		} else {
-			if (input.left) state.ship.x -= SHIP_KEY_SPEED * dt;
-			if (input.right) state.ship.x += SHIP_KEY_SPEED * dt;
+			if (input.left) state.ship.x -= SHIP_KEY_SPEED * state.scale * dt;
+			if (input.right) state.ship.x += SHIP_KEY_SPEED * state.scale * dt;
 		}
-		const half = SHIP.width / 2;
+		const half = (SHIP.width * state.scale) / 2;
 		// Clamped after moving, not before: the original checked the bound first
 		// and so let the ship slide one whole step past the edge.
 		state.ship.x = Math.max(half, Math.min(state.width - half, state.ship.x));
@@ -145,10 +175,10 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		state.shootTimer = SHOOT_COOLDOWN;
 		state.ammo--;
 		state.bullets.push({
-			x: state.ship.x - ROCKET.width / 2,
-			y: state.height - SHIP.height - ROCKET.height,
-			w: ROCKET.width,
-			h: ROCKET.height,
+			x: state.ship.x - (ROCKET.width * state.scale) / 2,
+			y: state.height - (SHIP.height + ROCKET.height) * state.scale,
+			w: ROCKET.width * state.scale,
+			h: ROCKET.height * state.scale,
 		});
 		playSound('shoot');
 		emitStats();
@@ -156,7 +186,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 
 	function updateBullets(dt) {
 		for (const bullet of state.bullets) {
-			bullet.y -= ROCKET_SPEED * dt;
+			bullet.y -= ROCKET_SPEED * state.scale * dt;
 		}
 		state.bullets = state.bullets.filter((b) => b.y + b.h > 0);
 	}
@@ -170,7 +200,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		// A boss is a one-alien formation, so the thinning term never kicks in;
 		// its speed comes from the type instead.
 		const factor = Math.max(...state.aliens.map((a) => ENEMY_TYPES[a.type].speedFactor));
-		return base * factor * (1 + thinned * (FORMATION.clearSpeedUp - 1));
+		return base * state.scale * factor * (1 + thinned * (FORMATION.clearSpeedUp - 1));
 	}
 
 	function updateAliens(dt) {
@@ -199,7 +229,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 			// closer to the player, instead of moving sideways this frame.
 			state.formation.dir *= -1;
 			for (const alien of state.aliens) {
-				alien.y += FORMATION.stepDown;
+				alien.y += FORMATION.stepDown * state.scale;
 			}
 		} else {
 			for (const alien of state.aliens) {
@@ -209,10 +239,10 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 
 		// Reaching the ship's line costs one life and pushes the survivors back
 		// to the top, rather than costing a life per alien in the bottom row.
-		const landingLine = state.height - SHIP.height;
+		const landingLine = state.height - SHIP.height * state.scale;
 		if (state.aliens.some((a) => a.y + a.h >= landingLine)) {
 			state.health--;
-			const lift = Math.min(...state.aliens.map((a) => a.y)) - FORMATION.marginTop;
+			const lift = Math.min(...state.aliens.map((a) => a.y)) - FORMATION.marginTop * state.scale;
 			for (const alien of state.aliens) {
 				alien.y -= lift;
 			}
@@ -247,10 +277,10 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		const shooter = shooters[Math.floor(Math.random() * shooters.length)];
 		if (!shooter) return;
 		state.bombs.push({
-			x: shooter.x + shooter.w / 2 - BOMB.width / 2,
+			x: shooter.x + shooter.w / 2 - (BOMB.width * state.scale) / 2,
 			y: shooter.y + shooter.h,
-			w: BOMB.width,
-			h: BOMB.height,
+			w: BOMB.width * state.scale,
+			h: BOMB.height * state.scale,
 		});
 		playSound('shoot');
 	}
@@ -258,10 +288,10 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 	function shipHitbox() {
 		const box = SHIP.hitbox;
 		return {
-			x: state.ship.x + box.dx,
-			y: state.height + box.dy,
-			w: box.w,
-			h: box.h,
+			x: state.ship.x + box.dx * state.scale,
+			y: state.height + box.dy * state.scale,
+			w: box.w * state.scale,
+			h: box.h * state.scale,
 		};
 	}
 
@@ -269,7 +299,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		if (state.invuln > 0) state.invuln = Math.max(0, state.invuln - dt);
 
 		for (const bomb of state.bombs) {
-			bomb.y += BOMB_SPEED * dt;
+			bomb.y += BOMB_SPEED * state.scale * dt;
 		}
 
 		const ship = shipHitbox();
@@ -283,7 +313,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 			spent.add(bomb);
 			state.health--;
 			state.invuln = INVULN_TIME;
-			addExplosion(state.ship.x - ALIEN.width / 2, state.height - SHIP.height);
+			addExplosion(state.ship.x - (ALIEN.width * state.scale) / 2, state.height - SHIP.height * state.scale);
 			playSound('explosion');
 			emitStats();
 		}

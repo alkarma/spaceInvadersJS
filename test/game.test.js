@@ -6,7 +6,7 @@ import { input } from '../src/input.js';
 import { explosionLook } from '../src/render.js';
 import {
 	SCORE_TO_WIN, AMMO_BONUSES, START_AMMO, START_HEALTH, SHIP, FORMATION, waveLayout,
-	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, isBossWave, INVULN_TIME,
+	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, isBossWave, INVULN_TIME, REFERENCE,
 } from '../src/config.js';
 
 // src/game.js deliberately has no DOM dependency, so the rules can be checked here.
@@ -274,6 +274,57 @@ test('a boss moves faster than a full formation', () => {
 	const bossStep = Math.abs(boss.state.aliens[0].x - before);
 
 	assert.ok(bossStep > gridStep, `boss ${bossStep} should exceed grid ${gridStep}`);
+});
+
+test('a small screen scales the playfield down, not just the layout', () => {
+	const big = newGame({ width: 1400, height: 900 }).game;
+	const small = newGame({ width: 375, height: 812 }).game;
+
+	assert.equal(big.state.scale, 1, 'a roomy screen plays at design size');
+	assert.ok(small.state.scale < 1, 'a phone scales down');
+	assert.ok(
+		small.state.aliens[0].w < big.state.aliens[0].w,
+		'aliens shrink with the field',
+	);
+
+	// What actually matters is the share of the screen the ship takes up.
+	const share = (game) => (SHIP.width * game.state.scale) / game.state.width;
+	assert.ok(
+		share(small) < share(big) * 2,
+		`phone ${(share(small) * 100).toFixed(0)}% vs desktop ${(share(big) * 100).toFixed(0)}%`,
+	);
+});
+
+test('the scale never collapses below its floor', () => {
+	const tiny = newGame({ width: 200, height: 300 }).game;
+	assert.equal(tiny.state.scale, REFERENCE.minScale);
+});
+
+test('resizing rescales what is already on screen', () => {
+	const { game } = newGame({ width: 1400, height: 900 });
+	const before = game.state.aliens[0].w;
+	game.resize(375, 812);
+
+	assert.ok(game.state.scale < 1, 'scale followed the window');
+	assert.ok(game.state.aliens[0].w < before, 'existing aliens shrank too');
+	for (const alien of game.state.aliens) {
+		assert.ok(alien.x >= 0 && alien.x + alien.w <= 375, 'and stayed on screen');
+	}
+	assert.ok(game.state.ship.x >= 0 && game.state.ship.x <= 375, 'ship too');
+});
+
+test('a narrow screen drops columns so nothing spawns out of reach', () => {
+	// Wave 9 wants 7 columns; 375px cannot hold them at 60px each.
+	const { game } = newGame({ width: 375, height: 700 });
+	while (game.state.wave < 9) {
+		game.state.aliens = [];
+		game.update(0.016);
+	}
+	assert.ok(waveLayout(9).cols > 5, 'the layout really does ask for more');
+	for (const alien of game.state.aliens) {
+		assert.ok(alien.x >= 0, 'alien off the left edge at ' + alien.x);
+		assert.ok(alien.x + alien.w <= 375, 'alien off the right edge at ' + alien.x);
+	}
 });
 
 test('only the front line of the formation drops bombs', () => {

@@ -2,6 +2,9 @@
 // per frame. In the original every call to game() attached a fresh mousemove /
 // keydown listener, so replaying after a game over fired the handlers twice.
 // Here the listeners are attached exactly once, at startup.
+//
+// Pointer events rather than mouse events, so a finger works the same as a
+// mouse without a second code path.
 export const input = {
 	pointerX: 0,
 	pointerY: 0,
@@ -10,18 +13,32 @@ export const input = {
 	right: false,
 };
 
+function release() {
+	input.firing = false;
+	input.left = false;
+	input.right = false;
+}
+
 export function initInput({ onPauseToggle }) {
-	window.addEventListener('mousemove', (e) => {
+	window.addEventListener('pointermove', (e) => {
 		input.pointerX = e.clientX;
 		input.pointerY = e.clientY;
 	});
 
-	window.addEventListener('mousedown', (e) => {
-		if (e.button === 0) input.firing = true;
+	window.addEventListener('pointerdown', (e) => {
+		// On a touch screen the first contact is both the aim and the trigger,
+		// so take the position from the same event rather than waiting for a move.
+		input.pointerX = e.clientX;
+		input.pointerY = e.clientY;
+		if (e.pointerType !== 'mouse' || e.button === 0) input.firing = true;
 	});
 
-	window.addEventListener('mouseup', (e) => {
-		if (e.button === 0) input.firing = false;
+	window.addEventListener('pointerup', () => {
+		input.firing = false;
+	});
+
+	window.addEventListener('pointercancel', () => {
+		input.firing = false;
 	});
 
 	window.addEventListener('keydown', (e) => {
@@ -39,9 +56,8 @@ export function initInput({ onPauseToggle }) {
 	});
 
 	// Without this a key or button held while the tab loses focus stays stuck.
-	window.addEventListener('blur', () => {
-		input.firing = false;
-		input.left = false;
-		input.right = false;
+	window.addEventListener('blur', release);
+	document.addEventListener('visibilitychange', () => {
+		if (document.hidden) release();
 	});
 }

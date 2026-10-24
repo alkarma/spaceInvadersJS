@@ -62,7 +62,7 @@ export function createRenderer(canvas, assets) {
 		ctx.fillRect(0, 0, width, height);
 	}
 
-	function drawShip(x, height, invuln) {
+	function drawShip(x, height, invuln, scale) {
 		ctx.save();
 		if (invuln > 0) {
 			// Blink while the hit grace period runs, so it is obvious why bombs
@@ -71,7 +71,12 @@ export function createRenderer(canvas, assets) {
 		}
 		ctx.fillStyle = SHIP.color;
 		for (const part of SHIP.parts) {
-			ctx.fillRect(Math.round(x + part.dx), height + part.dy, part.w, part.h);
+			ctx.fillRect(
+				Math.round(x + part.dx * scale),
+				Math.round(height + part.dy * scale),
+				Math.ceil(part.w * scale),
+				Math.ceil(part.h * scale),
+			);
 		}
 		ctx.restore();
 	}
@@ -105,9 +110,9 @@ export function createRenderer(canvas, assets) {
 		ctx.restore();
 	}
 
-	function drawHealthBar(alien) {
-		const height = 8;
-		const y = alien.y - height - 10;
+	function drawHealthBar(alien, scale) {
+		const height = Math.max(4, 8 * scale);
+		const y = alien.y - height - 10 * scale;
 		const ratio = Math.max(0, alien.hp / alien.maxHp);
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
 		ctx.fillRect(alien.x, y, alien.w, height);
@@ -118,7 +123,7 @@ export function createRenderer(canvas, assets) {
 		ctx.strokeRect(alien.x + 0.5, y + 0.5, alien.w - 1, height - 1);
 	}
 
-	function drawAliens(aliens, frame) {
+	function drawAliens(aliens, frame, scale) {
 		for (const alien of aliens) {
 			const type = ENEMY_TYPES[alien.type];
 			// The whole formation shares one frame counter, so they animate in
@@ -142,7 +147,7 @@ export function createRenderer(canvas, assets) {
 				ctx.fillRect(x, y, alien.w, alien.h);
 			}
 			// Only something that can survive a hit needs a bar.
-			if (alien.maxHp > 1) drawHealthBar(alien);
+			if (alien.maxHp > 1) drawHealthBar(alien, scale);
 		}
 	}
 
@@ -164,15 +169,16 @@ export function createRenderer(canvas, assets) {
 		ctx.restore();
 	}
 
-	function drawCrosshair(controlType, shipX) {
+	function drawCrosshair(controlType, shipX, scale) {
 		// In mouse mode the crosshair tracks the pointer. In keyboard mode the
 		// original pinned it to a fixed height above the ship, so it stays there.
 		const x = controlType === 'mouse' ? input.pointerX : shipX;
-		const y = controlType === 'mouse' ? input.pointerY : 100 + CROSS.size / 2;
-		const half = CROSS.size / 2;
+		const y = controlType === 'mouse' ? input.pointerY : 100 * scale + half;
+		const size = CROSS.size * scale;
+		const half = size / 2;
 		ctx.save();
 		ctx.strokeStyle = CROSS.color;
-		ctx.lineWidth = 2;
+		ctx.lineWidth = Math.max(1, 2 * scale);
 		ctx.beginPath();
 		ctx.moveTo(x - half, y);
 		ctx.lineTo(x + half, y);
@@ -181,7 +187,7 @@ export function createRenderer(canvas, assets) {
 		ctx.stroke();
 		ctx.lineWidth = 1;
 		ctx.beginPath();
-		ctx.arc(x, y, CROSS.size * 0.35, 0, Math.PI * 2);
+		ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
 		ctx.stroke();
 		ctx.restore();
 	}
@@ -191,12 +197,12 @@ export function createRenderer(canvas, assets) {
 	function render(state, width, height) {
 		drawBackground(width, height);
 		if (!state) return;
-		drawAliens(state.aliens, state.frame);
+		drawAliens(state.aliens, state.frame, state.scale);
 		drawBullets(state.bullets);
 		drawBombs(state.bombs);
-		drawShip(state.ship.x, state.height, state.invuln);
+		drawShip(state.ship.x, state.height, state.invuln, state.scale);
 		drawExplosions(state.explosions);
-		if (!state.finished) drawCrosshair(state.controlType, state.ship.x);
+		if (!state.finished) drawCrosshair(state.controlType, state.ship.x, state.scale);
 	}
 
 	return { render };
