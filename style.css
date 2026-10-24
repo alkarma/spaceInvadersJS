@@ -150,102 +150,6 @@ input[type="text"]:active {
 	display: block;
 	margin-top: 10px;
 }
-
-#open_space {
-	position: relative;
-	width: 100%;
-	height: 100vh;
-	background: url(pics/space3.jpg);
-}
-#open_space.we-are-in-open-space-now {
-	pointer-events: none;
-	cursor: none;
-}
-#cross {
-	position: absolute;
-	display: none;
-	width: 50px;
-	height: 50px;
-	left: calc(50% - 15px);
-	top: calc(50% - 15px);
-	cursor: none;
-}
-#cross::before,
-#cross::after {
-	content: ' ';
-	display: block;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	width: 100%;
-	height: 2px;
-	background-color: red;
-}
-#cross::after {
-	transform: translate(-50%, -50%) rotate(90deg); 
-}
-#cross span {
-	display: block;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	width: 70%;
-	height: 70%;
-	border-radius: 50%;
-	border: 1px solid red;
-	transform: translate(-50%, -50%);
-}
-#spaceship{
-	position: absolute;
-	bottom: 0;
-	left: calc(50% - 50px);
-	width: 100px;
-	height: 20px;
-	background: #4B4E31;
-	display: none;
-}
-#spaceship:after{
-	content: "";
-	display: block;
-	position: relative;
-	top: -30px;
-	left: 20px;
-	height: 15px;
-	width:60px;
-	background: #4B4E31;
-}
-#spaceship:before{
-	content: "";
-	display: block;
-	position: relative;
-	top: -30px;
-	left: 45px;
-	height: 15px;
-	width:10px;
-	background: #4B4E31;
-}
-.rocket{
-	width: 4px;
-	height: 10px;
-	position: absolute;
-	bottom: 75px;
-	left: 50%;
-	margin-left: -2px;
-	border-radius: 2px;
-	background: yellow;
-	-webkit-box-shadow: 0px 0px 20px 10px rgba(255,0,51,0.51);
-	-moz-box-shadow: 0px 0px 20px 10px rgba(255,0,51,0.51);
-	box-shadow: 0px 0px 20px 10px rgba(255,0,51,0.51);
-}
-.aliens{
-	width:60px;
-	height: 43px;
-	position: absolute;
-	top:0;
-	left: 15px;
-	background: url(pics/move1.png);
-}
 .game_score{
 	position: fixed;
 	top: 0;
@@ -347,26 +251,54 @@ input[type="text"]:active {
 	font-size: 30px;
 	color: #444444;
 }
-.explosion {
-	position: absolute;
-	width:60px;
-	height: 43px;
-}
 
-.explosion::before {
-	content: ' ';
+/* --- Canvas playfield -------------------------------------------------- */
+/* The ship, aliens, rockets, crosshair and explosions used to be DOM nodes
+   with their own rules here; they are drawn by src/render.js now. */
+#field {
 	display: block;
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	border-radius: 50%;
-	animation-name: exp;
-  animation-duration: 1s;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 }
 
-@keyframes exp {
-  0%  {width: 20px; height: 20px; background-color:rgb(255, 81, 1); box-shadow: 0px 0px 0px 0px rgb(255 0 51 / 51%);}
-  50% {width: 40px; height: 40px; background-color:rgba(255, 251, 0, 0.5); box-shadow: 0px 0px 50px 50px rgb(255 0 51 / 51%);}
-	100% {width: 60px; height: 60px; background-color:rgba(255, 251, 0, 0); box-shadow: 0px 0px 110px 20px rgb(255 0 51 / 1%);}
+/* --- HUD --------------------------------------------------------------- */
+#hud {
+	pointer-events: none;
+}
+#hud:not(.hud-visible) {
+	display: none;
+}
+
+/* --- Pause ------------------------------------------------------------- */
+#pause_screen {
+	display: none;
+	position: fixed;
+	z-index: 7;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0.6);
+}
+#pause_screen.active {
+	display: flex;
+}
+.pause_inscription {
+	margin: 0;
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 60px;
+	color: white;
+}
+.pause_notice {
+	text-align: center;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 18px;
+	color: #bbbbbb;
 }

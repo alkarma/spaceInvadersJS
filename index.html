@@ -1,26 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>JS Homework #5 - Al Karma</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Space Invaders JS</title>
 	<link rel="stylesheet" href="style.css">
-	<script src="node_modules/jquery/dist/jquery.min.js"></script>
-	<script src="script.js"></script>
 </head>
 <body>
-	<div class="space-wrap">	
-		<div id="open_space">
-			<div id="spaceship"></div>
-			<div id="cross">
-				<span></span>
-			</div>
-		</div>
+	<div class="space-wrap">
+		<canvas id="field"></canvas>
+		<div id="hud"></div>
 	</div>
 
 	<div id="start_menu">
 		<div class="login_wrapper">
 			<div class="button nickname_submit">Login</div>
-			<input id="nickname" type="text">
+			<input id="nickname" type="text" autocomplete="off">
 			<div class="button logout">Logout</div>
 		</div>
 		<div class="greeting-text">
@@ -33,12 +28,19 @@
 			<span>Options</span>
 		</div>
 	</div>
+
 	<div id="select_control">
 		<p>Select your control type</p>
 		<div class="button back"><span>Back to Main menu</span></div>
 		<div class="button keyboard"><span>Keyboard<br>+<br>Mouse</span></div>
 		<div class="button mouse"><span>Mouse</span></div>
 	</div>
+
+	<div id="pause_screen">
+		<p class="pause_inscription">PAUSED</p>
+		<p class="pause_notice">press ESC to continue</p>
+	</div>
+
 	<div class="gameover">
 		<p class="gameover_inscription fail">GAME OVER!</p>
 		<p class="gameover_inscription win">CONGRATULATIONS!!!</p>
@@ -47,5 +49,7 @@
 		<p class="gameover_notice win">You win this game! <br> <br> <br> You scored 100 points in this game ... Seriously? Don't you have a personal life?</p>
 		<div class="button back">back to main menu</div>
 	</div>
+
+	<script type="module" src="src/main.js"></script>
 </body>
 </html>

@@ -1,5 +1,10 @@
 {
-  "dependencies": {
-    "jquery": "^3.6.0"
+  "name": "space-invaders-js",
+  "version": "0.3.0.1",
+  "description": "Space Invaders in vanilla JS on a canvas",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8080"
   }
 }
