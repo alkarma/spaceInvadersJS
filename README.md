@@ -60,6 +60,16 @@ two frames and scores 1, the purple one fills the back rows and scores 3, and
 the boss reuses `spin1`/`spin2` — the same green art at 1100x790, which is why
 it stays sharp drawn large.
 
+## Profiles and scores
+
+Logging in picks a profile. There are no passwords — it is a name, not an
+account. Each profile keeps its ten best runs; the game over screen shows
+whether the run was a personal best and ranks the profiles against each other.
+
+Everything is stored under an `si:` prefix. Earlier versions wrote the nickname
+itself as a top-level key next to `controls` and `activeGamer`, so logging in as
+"controls" corrupted the control setting. Old data is migrated on first load.
+
 ## Controls
 
 Picked under *Options*, remembered in `localStorage`.

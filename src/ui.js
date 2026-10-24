@@ -18,6 +18,9 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 	const pauseScreen = document.querySelector('#pause_screen');
 	const gameOverScreen = document.querySelector('.gameover');
 	const scoreOut = document.querySelector('.yourscore');
+	const personalBest = document.querySelector('.personal_best');
+	const leaderboard = document.querySelector('.leaderboard');
+	const leaderboardList = document.querySelector('.leaderboard_list');
 	const loginWrapper = document.querySelector('.login_wrapper');
 	const nickInput = document.querySelector('#nickname');
 	const greeting = document.querySelector('.greeting-text');
@@ -54,11 +57,6 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 			setGreeting(TEXTS.welcomeBack(nick));
 			return;
 		}
-		if (storage.isReservedNick(nick)) {
-			loginWrapper.classList.add('error');
-			setGreeting(TEXTS.nickTaken);
-			return;
-		}
 		storage.registerNick(nick);
 		storage.setActiveGamer(nick);
 		loginWrapper.classList.remove('error');
@@ -71,6 +69,25 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 		loginWrapper.classList.remove('logged-in', 'error');
 		clearGreeting();
 		nickInput.value = '';
+	}
+
+	function showScores({ result, leaderboard: rows = [] }) {
+		personalBest.textContent = result
+			? (result.isPersonalBest ? TEXTS.newBest : TEXTS.bestSoFar(result.best))
+			: '';
+		leaderboardList.replaceChildren();
+		const you = storage.getActiveGamer();
+		for (const [index, row] of rows.entries()) {
+			const item = document.createElement('li');
+			item.classList.toggle('you', row.nick === you);
+			const name = document.createElement('span');
+			name.textContent = `${index + 1}. ${row.nick}`;
+			const value = document.createElement('span');
+			value.textContent = row.score;
+			item.append(name, value);
+			leaderboardList.append(item);
+		}
+		leaderboard.classList.toggle('active', rows.length > 0);
 	}
 
 	function show(next, payload = {}) {
@@ -87,6 +104,7 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 			gameOverScreen.classList.toggle('win', payload.status === 'win');
 			gameOverScreen.classList.toggle('fail', payload.status !== 'win');
 			scoreOut.textContent = TEXTS.score(payload.score);
+			showScores(payload);
 		}
 		if (next === SCREEN.MENU) {
 			const nick = storage.getActiveGamer();

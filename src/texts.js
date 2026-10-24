@@ -3,7 +3,8 @@
 export const TEXTS = {
 	notLoggedIn: 'Who are you? Login first!',
 	emptyNick: 'Type something, you moron...',
-	nickTaken: 'Fuck you, asshole!',
+	newBest: 'NEW PERSONAL BEST!',
+	bestSoFar: (best) => 'Your best: ' + best,
 	welcomeBack: (nick) => 'Welcome back, ' + nick,
 	welcomeNew: (nick) => 'Good to see you, ' + nick + '! Come on in!',
 	score: (value) => 'YOUR SCORE: ' + value,
