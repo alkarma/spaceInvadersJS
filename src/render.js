@@ -1,4 +1,4 @@
-import { SHIP, ROCKET, ALIEN, CROSS, EXPLOSION, BACKGROUND } from './config.js';
+import { SHIP, ROCKET, ALIEN, ENEMY_TYPES, CROSS, EXPLOSION, BACKGROUND } from './config.js';
 import { input } from './input.js';
 
 function loadImage(src) {
@@ -13,11 +13,17 @@ function loadImage(src) {
 }
 
 export async function loadAssets() {
-	const [background, alien] = await Promise.all([
+	// Every frame referenced by an enemy type, loaded once and keyed by path.
+	const framePaths = [...new Set(Object.values(ENEMY_TYPES).flatMap((t) => t.frames))];
+	const [background, ...frames] = await Promise.all([
 		loadImage(BACKGROUND),
-		loadImage(ALIEN.sprite),
+		...framePaths.map(loadImage),
 	]);
-	return { background, alien };
+	const sprites = {};
+	framePaths.forEach((path, i) => {
+		sprites[path] = frames[i];
+	});
+	return { background, sprites };
 }
 
 function lerp(a, b, t) {
@@ -81,12 +87,16 @@ export function createRenderer(canvas, assets) {
 		ctx.restore();
 	}
 
-	function drawAliens(aliens) {
+	function drawAliens(aliens, frame) {
 		for (const alien of aliens) {
-			if (assets.alien) {
-				ctx.drawImage(assets.alien, Math.round(alien.x), Math.round(alien.y), alien.w, alien.h);
+			const type = ENEMY_TYPES[alien.type];
+			// The whole formation shares one frame counter, so they animate in
+			// lockstep the way the arcade original did.
+			const sprite = assets.sprites[type.frames[frame % type.frames.length]];
+			if (sprite) {
+				ctx.drawImage(sprite, Math.round(alien.x), Math.round(alien.y), alien.w, alien.h);
 			} else {
-				ctx.fillStyle = '#7fff00';
+				ctx.fillStyle = alien.type === 'elite' ? '#8000ff' : '#00cc00';
 				ctx.fillRect(alien.x, alien.y, alien.w, alien.h);
 			}
 		}
@@ -135,7 +145,7 @@ export function createRenderer(canvas, assets) {
 	function render(state, width, height) {
 		drawBackground(width, height);
 		if (!state) return;
-		drawAliens(state.aliens);
+		drawAliens(state.aliens, state.frame);
 		drawBullets(state.bullets);
 		drawShip(state.ship.x, state.height);
 		drawExplosions(state.explosions);

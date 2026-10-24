@@ -57,6 +57,7 @@ function startGame() {
 		height: viewHeight,
 		controlType,
 		onStats: (stats) => hud.update(stats),
+		onWave: (wave) => hud.announceWave(wave),
 		onFinish: (status, score) => {
 			audio.pauseMusic();
 			setScreen(SCREEN.GAMEOVER, { status, score });

@@ -1,14 +1,10 @@
 import {
-	SHIP, ROCKET, ALIEN, EXPLOSION,
-	ROCKET_SPEED, ALIEN_FALL_SPEED, ALIEN_DRIFT_RATIOS, SHIP_KEY_SPEED, SHOOT_COOLDOWN,
-	START_AMMO, START_HEALTH, SCORE_TO_WIN, AMMO_BONUSES,
+	SHIP, ROCKET, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION, waveLayout,
+	ROCKET_SPEED, SHIP_KEY_SPEED, SHOOT_COOLDOWN,
+	START_AMMO, START_HEALTH, SCORE_TO_WIN, AMMO_BONUSES, WAVE_CLEAR_AMMO,
 } from './config.js';
 import { input } from './input.js';
 import { playSound } from './audio.js';
-
-function randInt(min, max) {
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 function overlaps(a, b) {
 	// Proper AABB test. The original required the rocket to be *entirely*
@@ -21,7 +17,7 @@ function overlaps(a, b) {
 	);
 }
 
-export function createGame({ width, height, controlType, onStats, onFinish }) {
+export function createGame({ width, height, controlType, onStats, onWave, onFinish }) {
 	const state = {
 		width,
 		height,
@@ -33,21 +29,45 @@ export function createGame({ width, height, controlType, onStats, onFinish }) {
 		score: 0,
 		ammo: START_AMMO,
 		health: START_HEALTH,
+		wave: 0,
 		shootTimer: 0,
+		animTimer: 0,
+		frame: 0,
+		formation: { dir: 1, size: 0 },
 		finished: null, // 'win' | 'fail'
 	};
 
-	function spawnAlien() {
-		const x = randInt(1, Math.max(1, state.width - ALIEN.width - 1));
-		state.aliens.push({
-			x,
-			y: 0,
-			w: ALIEN.width,
-			h: ALIEN.height,
-			// The original picked direction from the parity of the spawn x.
-			dir: x % 2 ? 1 : -1,
-			driftRatio: ALIEN_DRIFT_RATIOS[randInt(0, ALIEN_DRIFT_RATIOS.length - 1)],
-		});
+	// Ammo bonuses are awarded by threshold crossing, not by an exact score
+	// match: the higher-scoring enemy makes the score jump, so `score == 10`
+	// would often never be true.
+	const pendingBonuses = Object.keys(AMMO_BONUSES)
+		.map(Number)
+		.sort((a, b) => a - b);
+
+	function startWave() {
+		state.wave++;
+		const { cols, rows, eliteRows } = waveLayout(state.wave);
+		// Shrink the gaps rather than the grid if the screen is too narrow.
+		const gapX = Math.min(
+			FORMATION.gapX,
+			Math.max(4, (state.width - 40 - cols * ALIEN.width) / Math.max(1, cols - 1)),
+		);
+		const totalWidth = cols * ALIEN.width + (cols - 1) * gapX;
+		const originX = Math.max(0, (state.width - totalWidth) / 2);
+		for (let row = 0; row < rows; row++) {
+			for (let col = 0; col < cols; col++) {
+				state.aliens.push({
+					x: originX + col * (ALIEN.width + gapX),
+					y: FORMATION.marginTop + row * (ALIEN.height + FORMATION.gapY),
+					w: ALIEN.width,
+					h: ALIEN.height,
+					type: row < eliteRows ? 'elite' : 'grunt',
+				});
+			}
+		}
+		state.formation.dir = 1;
+		state.formation.size = state.aliens.length;
+		onWave(state.wave);
 	}
 
 	function addExplosion(x, y) {
@@ -55,17 +75,24 @@ export function createGame({ width, height, controlType, onStats, onFinish }) {
 	}
 
 	function emitStats(ammoBonus = 0) {
-		onStats({ score: state.score, ammo: state.ammo, health: state.health, ammoBonus });
+		onStats({
+			score: state.score,
+			ammo: state.ammo,
+			health: state.health,
+			wave: state.wave,
+			ammoBonus,
+		});
 	}
 
 	function resize(w, h) {
 		// The original read the screen size once at load, so resizing the window
 		// left the movement bounds and spawn range wrong for the rest of the session.
+		const scale = state.width ? w / state.width : 1;
 		state.width = w;
 		state.height = h;
 		state.ship.x = Math.min(state.ship.x, w - SHIP.width / 2);
 		for (const alien of state.aliens) {
-			alien.x = Math.min(alien.x, Math.max(0, w - alien.w));
+			alien.x = Math.max(0, Math.min(alien.x * scale, w - alien.w));
 		}
 	}
 
@@ -104,34 +131,68 @@ export function createGame({ width, height, controlType, onStats, onFinish }) {
 		state.bullets = state.bullets.filter((b) => b.y + b.h > 0);
 	}
 
+	function formationSpeed() {
+		const base = FORMATION.baseSpeed + FORMATION.speedPerWave * (state.wave - 1);
+		const alive = state.aliens.length;
+		const total = state.formation.size || 1;
+		// Thinning the formation speeds up what is left, as in the arcade original.
+		const thinned = 1 - alive / total;
+		return base * (1 + thinned * (FORMATION.clearSpeedUp - 1));
+	}
+
 	function updateAliens(dt) {
-		const escaped = [];
-		for (const alien of state.aliens) {
-			alien.y += ALIEN_FALL_SPEED * dt;
-			alien.x += alien.dir * ALIEN_FALL_SPEED * alien.driftRatio * dt;
-			if (alien.x >= state.width - alien.w) {
-				alien.x = state.width - alien.w;
-				alien.dir = -1;
-			} else if (alien.x <= 0) {
-				alien.x = 0;
-				alien.dir = 1;
-			}
-			if (alien.y > state.height) escaped.push(alien);
+		if (!state.aliens.length) return;
+
+		state.animTimer += dt;
+		if (state.animTimer >= ALIEN_FRAME_TIME) {
+			state.animTimer -= ALIEN_FRAME_TIME;
+			state.frame++;
 		}
-		if (escaped.length) {
-			state.aliens = state.aliens.filter((a) => !escaped.includes(a));
-			state.health -= escaped.length;
+
+		const dx = state.formation.dir * formationSpeed() * dt;
+		let minX = Infinity;
+		let maxX = -Infinity;
+		for (const alien of state.aliens) {
+			minX = Math.min(minX, alien.x);
+			maxX = Math.max(maxX, alien.x + alien.w);
+		}
+
+		if (maxX + dx > state.width || minX + dx < 0) {
+			// Touching an edge reverses the march and drops the formation a step
+			// closer to the player, instead of moving sideways this frame.
+			state.formation.dir *= -1;
+			for (const alien of state.aliens) {
+				alien.y += FORMATION.stepDown;
+			}
+		} else {
+			for (const alien of state.aliens) {
+				alien.x += dx;
+			}
+		}
+
+		// Reaching the ship's line costs one life and pushes the survivors back
+		// to the top, rather than costing a life per alien in the bottom row.
+		const landingLine = state.height - SHIP.height;
+		if (state.aliens.some((a) => a.y + a.h >= landingLine)) {
+			state.health--;
+			const lift = Math.min(...state.aliens.map((a) => a.y)) - FORMATION.marginTop;
+			for (const alien of state.aliens) {
+				alien.y -= lift;
+			}
 			emitStats();
-			if (state.health > 0) escaped.forEach(spawnAlien);
 		}
 	}
 
 	function grantAmmoBonus() {
-		const bonus = AMMO_BONUSES[state.score];
-		if (!bonus) return 0;
-		state.ammo += bonus;
-		playSound('bonus');
-		return bonus;
+		let granted = 0;
+		while (pendingBonuses.length && state.score >= pendingBonuses[0]) {
+			granted += AMMO_BONUSES[pendingBonuses.shift()];
+		}
+		if (granted) {
+			state.ammo += granted;
+			playSound('bonus');
+		}
+		return granted;
 	}
 
 	function updateCollisions() {
@@ -144,17 +205,14 @@ export function createGame({ width, height, controlType, onStats, onFinish }) {
 				deadAliens.add(alien);
 				addExplosion(alien.x, alien.y);
 				playSound('explosion');
-				state.score++;
+				state.score += ENEMY_TYPES[alien.type].score;
 				break;
 			}
 		}
 		if (!deadAliens.size) return;
 		state.bullets = state.bullets.filter((b) => !deadBullets.has(b));
 		state.aliens = state.aliens.filter((a) => !deadAliens.has(a));
-		const bonus = grantAmmoBonus();
-		emitStats(bonus);
-		// One alien at a time, exactly as before: each kill spawns one replacement.
-		deadAliens.forEach(spawnAlien);
+		emitStats(grantAmmoBonus());
 	}
 
 	function updateExplosions(dt) {
@@ -162,6 +220,13 @@ export function createGame({ width, height, controlType, onStats, onFinish }) {
 			explosion.t += dt;
 		}
 		state.explosions = state.explosions.filter((e) => e.t < EXPLOSION.duration);
+	}
+
+	function checkWaveCleared() {
+		if (state.aliens.length || state.finished) return;
+		state.ammo += WAVE_CLEAR_AMMO;
+		startWave();
+		emitStats(WAVE_CLEAR_AMMO);
 	}
 
 	function checkFinish() {
@@ -186,9 +251,10 @@ export function createGame({ width, height, controlType, onStats, onFinish }) {
 		updateCollisions();
 		updateExplosions(dt);
 		checkFinish();
+		checkWaveCleared();
 	}
 
-	spawnAlien();
+	startWave();
 	emitStats();
 
 	return { state, update, resize };

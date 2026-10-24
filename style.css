@@ -302,3 +302,40 @@ input[type="text"]:active {
 	font-size: 18px;
 	color: #bbbbbb;
 }
+
+/* --- Wave readout and banner ------------------------------------------- */
+.wave_display {
+	position: fixed;
+	top: 50px;
+	right: 0;
+	font-family: 'Press Start 2P', cursive;
+	font-size: 18px;
+	color: green;
+	z-index: 3;
+	margin: 25px;
+}
+.wave_display:before {
+	content: "wave: ";
+}
+.wave_banner {
+	position: fixed;
+	left: 50%;
+	top: 45%;
+	transform: translate(-50%, -50%);
+	font-family: 'Press Start 2P', cursive;
+	font-size: 48px;
+	color: white;
+	text-shadow: 0 0 20px rgba(255, 0, 51, 0.8);
+	z-index: 4;
+	opacity: 0;
+	pointer-events: none;
+}
+.wave_banner.active {
+	animation: wave-banner 1.6s ease-out;
+}
+@keyframes wave-banner {
+	0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+	20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+	70% { opacity: 1; }
+	100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
+}

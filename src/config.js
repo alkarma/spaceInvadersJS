@@ -19,7 +19,18 @@ export const SHIP = {
 
 export const ROCKET = { width: 4, height: 10, color: '#ffff00', glow: 'rgba(255, 0, 51, 0.51)' };
 
-export const ALIEN = { width: 60, height: 43, sprite: 'pics/move1.png' };
+export const ALIEN = { width: 60, height: 43 };
+
+// Two enemies, both already in pics/. The green one has a two-frame walk cycle
+// (move1/move2); the purple one only ever got a single frame (static1).
+// As in the arcade original, the rows further from the player are worth more.
+export const ENEMY_TYPES = {
+	grunt: { frames: ['pics/move1.png', 'pics/move2.png'], score: 1 },
+	elite: { frames: ['pics/static1.png'], score: 3 },
+};
+
+// The whole formation flips frames in lockstep, like the arcade original.
+export const ALIEN_FRAME_TIME = 0.45;
 
 export const CROSS = { size: 50, color: 'red' };
 
@@ -31,17 +42,45 @@ export const EXPLOSION = { duration: 1.0, from: 20, to: 60 };
 // and on how fast the machine could reflow the DOM. There is no exact number to
 // port, so these are px/second values tuned to feel like the original.
 export const ROCKET_SPEED = 420;
-export const ALIEN_FALL_SPEED = 42;
-// The original drifted sideways by randIndex/2 px per tick while falling 1 px,
-// so horizontal speed was 0.5x-2x the fall speed. That ratio is preserved.
-export const ALIEN_DRIFT_RATIOS = [0.5, 1, 1.5, 2];
 export const SHIP_KEY_SPEED = 600; // the original jumped 30px per keydown event
 export const SHOOT_COOLDOWN = 0.12; // seconds; the original had none at all
 
+// --- Waves ----------------------------------------------------------------
+// A wave is a grid that marches sideways and steps down every time it touches
+// an edge, as in the arcade original, instead of the single randomly drifting
+// alien the old version spawned one at a time.
+export const FORMATION = {
+	gapX: 24,
+	gapY: 18,
+	// Clears the HUD: the nickname sits at the top and the hearts at 50px.
+	marginTop: 110,
+	stepDown: 24,
+	// Horizontal speed at the start of a wave, in px/second.
+	baseSpeed: 34,
+	speedPerWave: 7,
+	// The formation accelerates as it is thinned out: at the last alien it moves
+	// this many times faster than at full strength.
+	clearSpeedUp: 3.2,
+};
+
+// How a wave is built. Capped so the grid keeps fitting on screen.
+export function waveLayout(wave) {
+	return {
+		cols: Math.min(8, 3 + Math.floor(wave / 2)),
+		rows: Math.min(4, 1 + Math.floor(wave / 3)),
+		// Number of top rows made up of the higher-scoring enemy.
+		eliteRows: wave < 3 ? 0 : Math.min(2, Math.floor(wave / 3)),
+	};
+}
+
 // --- Rules ----------------------------------------------------------------
 export const START_AMMO = 100;
-export const START_HEALTH = 1;
+// The original gave a single life, which was survivable when exactly one alien
+// existed at a time. A whole formation needs more room for error.
+export const START_HEALTH = 3;
 export const SCORE_TO_WIN = 100;
+export const WAVE_CLEAR_AMMO = 15;
+export const WAVE_BANNER_TIME = 1.6; // seconds the "WAVE N" banner stays up
 
 // Ammo bonuses, previously a chain of `if (gameScore == N)` branches.
 export const AMMO_BONUSES = { 10: 30, 20: 25, 30: 20, 40: 20, 50: 10, 60: 45 };

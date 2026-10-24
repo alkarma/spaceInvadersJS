@@ -5,6 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "python3 -m http.server 8080"
+    "start": "python3 -m http.server 8080",
+    "test": "node --test test/"
   }
 }
