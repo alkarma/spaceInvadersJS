@@ -58,14 +58,13 @@ function startGame() {
 		controlType,
 		onStats: (stats) => hud.update(stats),
 		onWave: (wave) => hud.announceWave(wave),
-		onFinish: (status, score) => {
+		onFinish: (score) => {
 			audio.pauseMusic();
 			// The original incremented a local variable here and threw it away;
 			// the run is actually saved against the profile now.
 			const nick = storage.getActiveGamer();
 			const result = nick ? storage.recordScore(nick, score) : null;
 			setScreen(SCREEN.GAMEOVER, {
-				status,
 				score,
 				result,
 				leaderboard: storage.getLeaderboard(),

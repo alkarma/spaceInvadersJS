@@ -1,9 +1,10 @@
 import {
 	SHIP, ROCKET, BOMB, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION,
-	waveLayout, isBossWave, bossHp,
+	waveLayout, isBossWave, bossHp, bossCount, bombInterval, bombsPerDrop,
 	BOMB_SPEED, BOMB_INTERVAL, BOSS_FIRE_RATE, INVULN_TIME, computeScale,
 	ROCKET_SPEED, SHIP_KEY_SPEED, SHOOT_COOLDOWN,
-	START_AMMO, START_HEALTH, SCORE_TO_WIN, AMMO_BONUSES, WAVE_CLEAR_AMMO,
+	START_AMMO, START_HEALTH, AMMO_BONUSES, WAVE_AMMO_REFUND, WAVE_CLEAR_AMMO_MIN,
+	AMMO_TRICKLE,
 } from './config.js';
 import { input } from './input.js';
 import { playSound } from './audio.js';
@@ -38,7 +39,9 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		ammo: START_AMMO,
 		health: START_HEALTH,
 		wave: 0,
+		waveShotCost: 0,
 		shootTimer: 0,
+		trickleTimer: 0,
 		bombTimer: 0,
 		invuln: 0,
 		animTimer: 0,
@@ -54,35 +57,52 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		.map(Number)
 		.sort((a, b) => a - b);
 
-	function spawnAlien(type, x, y) {
+	function spawnAlien(type, x, y, armour = 0) {
 		const spec = ENEMY_TYPES[type];
+		const hp = (type === 'boss' ? bossHp(state.wave) : spec.hp) + armour;
 		state.aliens.push({
 			x,
 			y,
 			w: (spec.width || ALIEN.width) * state.scale,
 			h: (spec.height || ALIEN.height) * state.scale,
 			type,
-			hp: type === 'boss' ? bossHp(state.wave) : spec.hp,
-			maxHp: type === 'boss' ? bossHp(state.wave) : spec.hp,
+			hp,
+			maxHp: hp,
 			hitFlash: 0,
 		});
+		// What a flawless run at this wave would cost in shots; the wave-clear
+		// refund is based on it.
+		state.waveShotCost += hp;
 	}
 
 	function startWave() {
 		state.wave++;
 		state.formation.dir = 1;
-		state.bombTimer = bombInterval();
+		state.waveShotCost = 0;
+		state.bombTimer = waveBombInterval();
 
 		if (isBossWave(state.wave)) {
 			const spec = ENEMY_TYPES.boss;
-			spawnAlien('boss', (state.width - spec.width * state.scale) / 2, FORMATION.marginTop * state.scale);
-			state.formation.size = 1;
+			const count = bossCount(state.wave);
+			const bossW = spec.width * state.scale;
+			// Spread them evenly, shrinking the spacing rather than letting one
+			// hang off the edge of a narrow screen.
+			const step = Math.min(bossW + 20 * state.scale, state.width / count);
+			const originX = Math.max(0, (state.width - step * count) / 2);
+			for (let i = 0; i < count; i++) {
+				spawnAlien(
+					'boss',
+					Math.min(originX + i * step, Math.max(0, state.width - bossW)),
+					FORMATION.marginTop * state.scale,
+				);
+			}
+			state.formation.size = state.aliens.length;
 			onWave(state.wave);
 			return;
 		}
 
 		const layout = waveLayout(state.wave);
-		const { rows, eliteRows } = layout;
+		const { rows, eliteRows, armour } = layout;
 		// Narrow screens shrink the gaps first and then, if the grid still will
 		// not fit, drop columns - otherwise a phone spawns aliens off-screen that
 		// can never be shot.
@@ -103,6 +123,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 					row < eliteRows ? 'elite' : 'grunt',
 					originX + col * (alienW + gapX),
 					(FORMATION.marginTop + row * (ALIEN.height + FORMATION.gapY)) * state.scale,
+					armour,
 				);
 			}
 		}
@@ -167,6 +188,19 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		// Clamped after moving, not before: the original checked the bound first
 		// and so let the ship slide one whole step past the edge.
 		state.ship.x = Math.max(half, Math.min(state.width - half, state.ship.x));
+	}
+
+	// Only runs when the magazine is empty and there is still something to shoot.
+	function updateAmmoTrickle(dt) {
+		if (state.ammo > 0 || !state.aliens.length) {
+			state.trickleTimer = 0;
+			return;
+		}
+		state.trickleTimer += dt;
+		if (state.trickleTimer < AMMO_TRICKLE.interval) return;
+		state.trickleTimer -= AMMO_TRICKLE.interval;
+		state.ammo += AMMO_TRICKLE.amount;
+		emitStats();
 	}
 
 	function updateShooting(dt) {
@@ -261,27 +295,31 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		)));
 	}
 
-	function bombInterval() {
-		const spaced = BOMB_INTERVAL.base - BOMB_INTERVAL.perWave * (state.wave - 1);
-		const interval = Math.max(BOMB_INTERVAL.min, spaced);
-		return isBossWave(state.wave) ? interval / BOSS_FIRE_RATE : interval;
+	function waveBombInterval() {
+		const interval = bombInterval(state.wave);
+		if (!isBossWave(state.wave)) return interval;
+		// Floor applied after the boss divisor, not before it.
+		return Math.max(BOMB_INTERVAL.bossMin, interval / BOSS_FIRE_RATE);
 	}
 
 	function updateEnemyFire(dt) {
 		if (!state.aliens.length) return;
 		state.bombTimer -= dt;
 		if (state.bombTimer > 0) return;
-		state.bombTimer = bombInterval();
+		state.bombTimer = waveBombInterval();
 
 		const shooters = frontLine();
-		const shooter = shooters[Math.floor(Math.random() * shooters.length)];
-		if (!shooter) return;
-		state.bombs.push({
-			x: shooter.x + shooter.w / 2 - (BOMB.width * state.scale) / 2,
-			y: shooter.y + shooter.h,
-			w: BOMB.width * state.scale,
-			h: BOMB.height * state.scale,
-		});
+		if (!shooters.length) return;
+		// Late waves fire a volley instead of a single bomb.
+		for (let i = 0; i < bombsPerDrop(state.wave); i++) {
+			const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+			state.bombs.push({
+				x: shooter.x + shooter.w / 2 - (BOMB.width * state.scale) / 2,
+				y: shooter.y + shooter.h,
+				w: BOMB.width * state.scale,
+				h: BOMB.height * state.scale,
+			});
+		}
 		playSound('shoot');
 	}
 
@@ -369,16 +407,22 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 
 	function checkWaveCleared() {
 		if (state.aliens.length || state.finished) return;
-		state.ammo += WAVE_CLEAR_AMMO;
+		// Scaled to what the wave just cleared would have cost at perfect
+		// accuracy, so the economy keeps up with waves that never stop growing.
+		const reward = Math.max(
+			WAVE_CLEAR_AMMO_MIN,
+			Math.ceil(state.waveShotCost * WAVE_AMMO_REFUND),
+		);
+		state.ammo += reward;
 		startWave();
-		emitStats(WAVE_CLEAR_AMMO);
+		emitStats(reward);
 	}
 
 	function checkFinish() {
-		if (state.finished) return;
-		if (state.score >= SCORE_TO_WIN) state.finished = 'win';
-		else if (state.health <= 0) state.finished = 'fail';
-		if (state.finished) onFinish(state.finished, state.score);
+		// There is no winning score: the run ends when the last life is gone.
+		if (state.finished || state.health > 0) return;
+		state.finished = 'fail';
+		onFinish(state.score);
 	}
 
 	function update(dt) {
@@ -390,6 +434,7 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 			return;
 		}
 		updateShip(dt);
+		updateAmmoTrickle(dt);
 		updateShooting(dt);
 		updateBullets(dt);
 		updateAliens(dt);

@@ -42,18 +42,45 @@ browser; `test/game.test.js` does exactly that.
 
 ## Waves
 
+The game is endless. There is no winning score — a run lasts until the last life
+is gone, and the waves keep getting harder with no upper bound.
+
 Each wave is a grid that marches sideways and steps down whenever it touches an
 edge. Thinning it out makes the survivors move faster. Clearing one starts the
-next, which is wider, deeper and quicker — see `waveLayout()` and `FORMATION` in
-`src/config.js`.
+next. Letting the formation reach the ship's line costs one life and pushes the
+survivors back to the top.
 
-Letting the formation reach the ship's line costs one life and pushes the
-survivors back to the top. The game is won at 100 points.
+Difficulty arrives in layers, so that something is always still growing once the
+layer before it has maxed out:
+
+| | |
+|---|---|
+| waves 1–12 | the grid grows to 8×5 |
+| waves 3+ | rows of the higher-scoring enemy spread forward until the grid is all of them |
+| waves 12+ | every alien gains another hit point every 6 waves, forever |
+| waves 16+ | the formation drops a bigger volley each time |
+| waves 20+ | boss waves send more than one boss |
+| throughout | the march, the fire rate and boss hit points keep climbing |
+
+Reaching 100 points — `SCORE_MILESTONE` — no longer ends anything. It only
+decides whether the game over screen congratulates you or insults you.
 
 Every fifth wave is a single boss instead of a grid. A boss is simply an alien
 with more than one hit point, so it marches, steps down and breaches through
 exactly the same code; it just moves faster, carries a health bar and each one
 is tougher than the last.
+
+## Ammo
+
+Clearing a wave pays back `WAVE_AMMO_REFUND` times what that wave would have
+cost to clear with no misses, which puts the break-even point near 55% accuracy.
+A flat bonus cannot work in an endless game: a late wave needs an order of
+magnitude more shots than an early one, so a fixed payout starves you however
+well you shoot. Running to empty with aliens still on screen trickles a round
+back every so often, so an empty magazine is a handicap rather than a dead end —
+the aliens should be what finish a run.
+
+## Return fire
 
 The formation shoots back. Only an alien with nothing of its own below it can
 drop a bomb, so fire comes from the front edge of the grid; the rate climbs with

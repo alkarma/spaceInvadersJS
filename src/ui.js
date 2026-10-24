@@ -1,5 +1,5 @@
 import { TEXTS } from './texts.js';
-import { SCORE_TO_WIN } from './config.js';
+import { SCORE_MILESTONE } from './config.js';
 import * as storage from './storage.js';
 
 // Screen names for the state machine. The original had no such concept: menus
@@ -29,12 +29,6 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 	const mouseButton = document.querySelector('.button.mouse');
 
 	let screen = null;
-
-	// The win notice used to spell out "100 points" in the markup, which quietly
-	// became a lie whenever the target score was changed.
-	for (const node of document.querySelectorAll('.win_score')) {
-		node.textContent = SCORE_TO_WIN;
-	}
 
 	function setGreeting(message) {
 		greeting.textContent = message;
@@ -108,9 +102,15 @@ export function createUi({ onPlay, onControlChange, onBackToMenu }) {
 			markControl(storage.getControlType());
 		}
 		if (next === SCREEN.GAMEOVER) {
-			gameOverScreen.classList.toggle('win', payload.status === 'win');
-			gameOverScreen.classList.toggle('fail', payload.status !== 'win');
+			// Nothing is won any more - the run always ends in death. Passing the
+			// milestone is what decides whether the screen congratulates or mocks.
+			const celebrate = payload.score >= SCORE_MILESTONE;
+			gameOverScreen.classList.toggle('win', celebrate);
+			gameOverScreen.classList.toggle('fail', !celebrate);
 			scoreOut.textContent = TEXTS.score(payload.score);
+			for (const node of document.querySelectorAll('.win_score')) {
+				node.textContent = payload.score;
+			}
 			showScores(payload);
 		}
 		if (next === SCREEN.MENU) {

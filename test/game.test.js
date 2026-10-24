@@ -5,8 +5,9 @@ import { createGame } from '../src/game.js';
 import { input } from '../src/input.js';
 import { explosionLook } from '../src/render.js';
 import {
-	SCORE_TO_WIN, AMMO_BONUSES, START_AMMO, START_HEALTH, SHIP, FORMATION, waveLayout,
-	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, isBossWave, INVULN_TIME, REFERENCE,
+	AMMO_BONUSES, START_AMMO, START_HEALTH, SHIP, FORMATION, waveLayout,
+	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, bossCount, isBossWave, INVULN_TIME,
+	REFERENCE, bombInterval, bombsPerDrop, WAVE_AMMO_REFUND, AMMO_TRICKLE, BOMB_INTERVAL,
 } from '../src/config.js';
 
 // src/game.js deliberately has no DOM dependency, so the rules can be checked here.
@@ -18,7 +19,7 @@ function newGame(options = {}) {
 		controlType: 'mouse',
 		onStats: () => {},
 		onWave: (wave) => events.waves.push(wave),
-		onFinish: (status, score) => { events.finish = { status, score }; },
+		onFinish: (score) => { events.finish = { score }; },
 		...options,
 	});
 	return { game, events };
@@ -183,21 +184,134 @@ test('running out of health ends the game and freezes the simulation', () => {
 	game.state.health = 1;
 	for (const alien of game.state.aliens) alien.y = 800 - SHIP.height - 10;
 	game.update(0.016);
-	assert.equal(events.finish.status, 'fail');
+	assert.ok(events.finish, 'the run ended');
 	const snapshot = game.state.aliens.map((a) => a.x);
 	game.update(0.5);
 	game.update(0.5);
 	assert.deepEqual(game.state.aliens.map((a) => a.x), snapshot, 'nothing moved after the end');
 });
 
-test('reaching the target score wins', () => {
+test('no score ends the run - only running out of lives does', () => {
 	const { game, events } = newGame();
-	game.state.score = SCORE_TO_WIN - 1;
-	game.state.aliens = [alienAt(500, 300)];
-	game.state.bullets = [{ x: 520, y: 320, w: 4, h: 10 }];
+	game.state.score = 100000;
 	game.update(0.016);
-	assert.equal(events.finish.status, 'win');
-	assert.equal(events.finish.score, SCORE_TO_WIN);
+	assert.equal(events.finish, null, 'still playing');
+	assert.ok(game.state.wave >= 1);
+});
+
+test('the difficulty keeps climbing after the grid stops growing', () => {
+	const full = waveLayout(40);
+	const later = waveLayout(80);
+	assert.equal(full.cols, later.cols, 'the grid is maxed out at both');
+	assert.equal(full.rows, later.rows);
+	assert.ok(later.armour > full.armour, 'armour keeps going up instead');
+	assert.ok(bombsPerDrop(80) > bombsPerDrop(40), 'and so does the volley size');
+	assert.ok(bossCount(80) > bossCount(40), 'and the number of bosses');
+});
+
+test('armour only starts once the grid is full', () => {
+	assert.equal(waveLayout(1).armour, 0);
+	assert.equal(waveLayout(5).armour, 0);
+	assert.ok(waveLayout(30).armour > 0);
+});
+
+test('nothing in the curve ever flattens out completely', () => {
+	// Sample far enough ahead that a hidden cap would show up.
+	let previous = waveLayout(50).armour;
+	for (const wave of [100, 200, 500, 1000]) {
+		const armour = waveLayout(wave).armour;
+		assert.ok(armour > previous, `armour stalled at wave ${wave}`);
+		previous = armour;
+	}
+	assert.ok(Number.isFinite(bombInterval(1000)), 'fire rate stays a real number');
+	assert.ok(bombInterval(1000) > 0, 'and never reaches zero');
+});
+
+test('armoured aliens take as many hits as their armour says', () => {
+	const { game } = newGame();
+	const armour = waveLayout(30).armour;
+	game.state.wave = 30;
+	game.state.aliens = [];
+	game.update(0.016); // clears the wave, spawning wave 31
+	const alien = game.state.aliens.find((a) => a.type !== 'boss');
+	assert.ok(alien, 'a grid wave');
+	assert.ok(alien.hp > 1, 'armoured');
+	assert.ok(alien.hp >= armour, `hp ${alien.hp} should reflect armour ${armour}`);
+});
+
+test('the ammo a wave pays back scales with what it cost to clear', () => {
+	const early = newGame().game;
+	const earlyCost = early.state.waveShotCost;
+	early.state.aliens = [];
+	const earlyAmmo = early.state.ammo;
+	early.update(0.016);
+	const earlyReward = early.state.ammo - earlyAmmo;
+
+	const late = newGame().game;
+	late.state.wave = 29;
+	late.state.aliens = [];
+	late.update(0.016); // spawn wave 30
+	const lateCost = late.state.waveShotCost;
+	late.state.aliens = [];
+	const lateAmmo = late.state.ammo;
+	late.update(0.016);
+	const lateReward = late.state.ammo - lateAmmo;
+
+	assert.ok(lateCost > earlyCost, 'a later wave costs more to clear');
+	assert.ok(lateReward > earlyReward, 'and pays back more');
+	assert.ok(
+		lateReward >= lateCost,
+		`a clean run must not lose ammo: paid ${lateReward} for a cost of ${lateCost}`,
+	);
+	assert.ok(lateReward <= lateCost * WAVE_AMMO_REFUND + 1, 'but not wildly more');
+});
+
+test('boss fire has a floor of its own, however late the wave', () => {
+	// The divisor used to be applied after the floor, so a late boss wave fired
+	// roughly ten times faster than anything was meant to.
+	const { game } = newGame();
+	for (const wave of [BOSS_EVERY, BOSS_EVERY * 10, BOSS_EVERY * 200]) {
+		game.state.wave = wave;
+		game.state.aliens = [alienAt(400, 300, 'boss')];
+		game.state.bombTimer = 0;
+		game.update(0.016);
+		assert.ok(
+			game.state.bombTimer >= BOMB_INTERVAL.bossMin,
+			`wave ${wave} fired every ${game.state.bombTimer}s`,
+		);
+	}
+});
+
+test('an empty magazine trickles rather than dead-ending the run', () => {
+	const { game } = newGame();
+	game.state.ammo = 0;
+	assert.ok(game.state.aliens.length, 'there is still something to shoot');
+
+	game.update(AMMO_TRICKLE.interval * 0.9);
+	assert.equal(game.state.ammo, 0, 'not yet');
+	game.update(AMMO_TRICKLE.interval * 0.2);
+	assert.equal(game.state.ammo, AMMO_TRICKLE.amount, 'a round arrives');
+});
+
+test('the trickle does not top up a magazine that has ammo in it', () => {
+	const { game } = newGame();
+	game.state.ammo = 5;
+	game.update(AMMO_TRICKLE.interval * 3);
+	assert.equal(game.state.ammo, 5, 'untouched');
+});
+
+test('a late boss wave sends more than one boss', () => {
+	const { game } = newGame();
+	const wave = BOSS_EVERY * 4; // the first wave where a second boss appears
+	game.state.wave = wave - 1;
+	game.state.aliens = [];
+	game.update(0.016);
+	assert.ok(isBossWave(game.state.wave));
+	assert.equal(game.state.aliens.length, bossCount(wave));
+	for (const boss of game.state.aliens) {
+		assert.equal(boss.type, 'boss');
+		assert.ok(boss.x >= 0 && boss.x + boss.w <= 1000, 'on screen at ' + boss.x);
+	}
 });
 
 test('resizing keeps the ship and the formation on screen', () => {
