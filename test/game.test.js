@@ -6,7 +6,7 @@ import { input } from '../src/input.js';
 import { explosionLook } from '../src/render.js';
 import {
 	SCORE_TO_WIN, AMMO_BONUSES, START_AMMO, START_HEALTH, SHIP, FORMATION, waveLayout,
-	ALIEN_FRAME_TIME,
+	ALIEN_FRAME_TIME, ENEMY_TYPES, BOSS_EVERY, bossHp, isBossWave,
 } from '../src/config.js';
 
 // src/game.js deliberately has no DOM dependency, so the rules can be checked here.
@@ -24,8 +24,20 @@ function newGame(options = {}) {
 	return { game, events };
 }
 
-function alienAt(x, y) {
-	return { x, y, w: 60, h: 43, type: 'grunt' };
+// Mirrors what startWave() builds, so the fixtures cannot drift from the real
+// shape of an alien.
+function alienAt(x, y, type = 'grunt') {
+	const spec = ENEMY_TYPES[type];
+	return {
+		x,
+		y,
+		w: spec.width || 60,
+		h: spec.height || 43,
+		type,
+		hp: spec.hp,
+		maxHp: spec.hp,
+		hitFlash: 0,
+	};
 }
 
 test.afterEach(() => {
@@ -147,7 +159,7 @@ test('ammo bonuses are awarded by crossing a threshold, not by an exact score', 
 	game.state.ammo = 50;
 	// A bystander out of the line of fire, so killing the target does not also
 	// clear the wave and pay the separate wave-clear bonus.
-	game.state.aliens = [{ x: 500, y: 300, w: 60, h: 43, type: 'elite' }, alienAt(0, 100)];
+	game.state.aliens = [alienAt(500, 300, 'elite'), alienAt(0, 100)];
 	game.state.bullets = [{ x: 520, y: 320, w: 4, h: 10 }];
 	game.update(0.016);
 	assert.equal(game.state.score, 11, 'jumped straight over 10');
@@ -195,6 +207,73 @@ test('resizing keeps the ship and the formation on screen', () => {
 	for (const alien of game.state.aliens) {
 		assert.ok(alien.x >= 0 && alien.x + alien.w <= 400, 'alien at ' + alien.x);
 	}
+});
+
+test('every fifth wave is a single boss', () => {
+	const { game } = newGame();
+	// Walk forward by clearing each wave outright.
+	while (game.state.wave < BOSS_EVERY) {
+		game.state.aliens = [];
+		game.update(0.016);
+	}
+	assert.ok(isBossWave(game.state.wave));
+	assert.equal(game.state.aliens.length, 1, 'one alien, not a grid');
+	assert.equal(game.state.aliens[0].type, 'boss');
+	assert.equal(game.state.aliens[0].hp, bossHp(BOSS_EVERY));
+});
+
+test('a boss soaks up hits instead of dying to the first one', () => {
+	const { game } = newGame();
+	game.state.aliens = [alienAt(400, 300, 'boss')];
+	const boss = game.state.aliens[0];
+	const hp = boss.hp;
+
+	const hit = () => {
+		game.state.bullets = [{ x: 450, y: 320, w: 4, h: 10 }];
+		game.update(0.016);
+	};
+
+	hit();
+	assert.equal(game.state.aliens.length, 1, 'still alive');
+	assert.equal(boss.hp, hp - 1, 'took one point of damage');
+	assert.ok(boss.hitFlash > 0, 'flashes on a hit');
+	assert.equal(game.state.score, 0, 'scores nothing until it dies');
+
+	for (let i = 0; i < hp - 1; i++) hit();
+	// Killing it empties the wave, which immediately spawns the next one, so
+	// check that the boss specifically is gone rather than that nothing is left.
+	assert.ok(!game.state.aliens.some((a) => a.type === 'boss'), 'dies once out of hp');
+	assert.equal(game.state.score, ENEMY_TYPES.boss.score);
+});
+
+test('a bullet is consumed by a boss it did not kill', () => {
+	const { game } = newGame();
+	game.state.aliens = [alienAt(400, 300, 'boss')];
+	game.state.bullets = [{ x: 450, y: 320, w: 4, h: 10 }];
+	game.update(0.016);
+	assert.equal(game.state.bullets.length, 0, 'the bullet is spent, not passing through');
+});
+
+test('later bosses are tougher', () => {
+	assert.ok(bossHp(BOSS_EVERY * 2) > bossHp(BOSS_EVERY));
+});
+
+test('a boss moves faster than a full formation', () => {
+	const grid = newGame().game;
+	const gridStep = (() => {
+		const before = grid.state.aliens[0].x;
+		grid.update(0.1);
+		return Math.abs(grid.state.aliens[0].x - before);
+	})();
+
+	const boss = newGame().game;
+	boss.state.aliens = [alienAt(400, 300, 'boss')];
+	boss.state.formation.size = 1;
+	const before = boss.state.aliens[0].x;
+	boss.update(0.1);
+	const bossStep = Math.abs(boss.state.aliens[0].x - before);
+
+	assert.ok(bossStep > gridStep, `boss ${bossStep} should exceed grid ${gridStep}`);
 });
 
 test('the formation animates in lockstep on a timer', () => {

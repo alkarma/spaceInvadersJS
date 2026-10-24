@@ -21,12 +21,25 @@ export const ROCKET = { width: 4, height: 10, color: '#ffff00', glow: 'rgba(255,
 
 export const ALIEN = { width: 60, height: 43 };
 
-// Two enemies, both already in pics/. The green one has a two-frame walk cycle
-// (move1/move2); the purple one only ever got a single frame (static1).
-// As in the arcade original, the rows further from the player are worth more.
+// Three enemies, all from sprites already in pics/. The green one has a
+// two-frame walk cycle (move1/move2); the purple one only ever got a single
+// frame (static1). As in the arcade original, what sits further from the player
+// is worth more. The boss reuses spin1/spin2, which are the same green art at
+// 1100x790 and so stay sharp when drawn big.
+//
+// `hp` above 1 is what makes something a boss: everything else about the
+// formation - marching, stepping down, breaching - works unchanged.
 export const ENEMY_TYPES = {
-	grunt: { frames: ['pics/move1.png', 'pics/move2.png'], score: 1 },
-	elite: { frames: ['pics/static1.png'], score: 3 },
+	grunt: { frames: ['pics/move1.png', 'pics/move2.png'], score: 1, hp: 1, speedFactor: 1 },
+	elite: { frames: ['pics/static1.png'], score: 3, hp: 1, speedFactor: 1 },
+	boss: {
+		frames: ['pics/spin1.png', 'pics/spin2.png'],
+		score: 15,
+		hp: 12,
+		speedFactor: 2.4,
+		width: 240,
+		height: 172, // keeps the source sprite's 1100x790 proportions
+	},
 };
 
 // The whole formation flips frames in lockstep, like the arcade original.
@@ -62,6 +75,18 @@ export const FORMATION = {
 	// this many times faster than at full strength.
 	clearSpeedUp: 3.2,
 };
+
+// Every n-th wave is a single boss instead of a grid.
+export const BOSS_EVERY = 5;
+
+export function isBossWave(wave) {
+	return wave % BOSS_EVERY === 0;
+}
+
+// Each boss is tougher than the last.
+export function bossHp(wave) {
+	return ENEMY_TYPES.boss.hp + 6 * (Math.floor(wave / BOSS_EVERY) - 1);
+}
 
 // How a wave is built. Capped so the grid keeps fitting on screen.
 export function waveLayout(wave) {

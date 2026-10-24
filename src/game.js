@@ -1,10 +1,14 @@
 import {
-	SHIP, ROCKET, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION, waveLayout,
+	SHIP, ROCKET, ALIEN, ENEMY_TYPES, ALIEN_FRAME_TIME, EXPLOSION, FORMATION,
+	waveLayout, isBossWave, bossHp,
 	ROCKET_SPEED, SHIP_KEY_SPEED, SHOOT_COOLDOWN,
 	START_AMMO, START_HEALTH, SCORE_TO_WIN, AMMO_BONUSES, WAVE_CLEAR_AMMO,
 } from './config.js';
 import { input } from './input.js';
 import { playSound } from './audio.js';
+
+// How long an alien glows after taking a hit that did not kill it.
+const HIT_FLASH_TIME = 0.12;
 
 function overlaps(a, b) {
 	// Proper AABB test. The original required the rocket to be *entirely*
@@ -44,8 +48,32 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		.map(Number)
 		.sort((a, b) => a - b);
 
+	function spawnAlien(type, x, y) {
+		const spec = ENEMY_TYPES[type];
+		state.aliens.push({
+			x,
+			y,
+			w: spec.width || ALIEN.width,
+			h: spec.height || ALIEN.height,
+			type,
+			hp: type === 'boss' ? bossHp(state.wave) : spec.hp,
+			maxHp: type === 'boss' ? bossHp(state.wave) : spec.hp,
+			hitFlash: 0,
+		});
+	}
+
 	function startWave() {
 		state.wave++;
+		state.formation.dir = 1;
+
+		if (isBossWave(state.wave)) {
+			const spec = ENEMY_TYPES.boss;
+			spawnAlien('boss', (state.width - spec.width) / 2, FORMATION.marginTop);
+			state.formation.size = 1;
+			onWave(state.wave);
+			return;
+		}
+
 		const { cols, rows, eliteRows } = waveLayout(state.wave);
 		// Shrink the gaps rather than the grid if the screen is too narrow.
 		const gapX = Math.min(
@@ -56,22 +84,19 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		const originX = Math.max(0, (state.width - totalWidth) / 2);
 		for (let row = 0; row < rows; row++) {
 			for (let col = 0; col < cols; col++) {
-				state.aliens.push({
-					x: originX + col * (ALIEN.width + gapX),
-					y: FORMATION.marginTop + row * (ALIEN.height + FORMATION.gapY),
-					w: ALIEN.width,
-					h: ALIEN.height,
-					type: row < eliteRows ? 'elite' : 'grunt',
-				});
+				spawnAlien(
+					row < eliteRows ? 'elite' : 'grunt',
+					originX + col * (ALIEN.width + gapX),
+					FORMATION.marginTop + row * (ALIEN.height + FORMATION.gapY),
+				);
 			}
 		}
-		state.formation.dir = 1;
 		state.formation.size = state.aliens.length;
 		onWave(state.wave);
 	}
 
-	function addExplosion(x, y) {
-		state.explosions.push({ x, y, t: 0 });
+	function addExplosion(x, y, w = ALIEN.width, h = ALIEN.height) {
+		state.explosions.push({ x, y, w, h, t: 0 });
 	}
 
 	function emitStats(ammoBonus = 0) {
@@ -137,11 +162,18 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 		const total = state.formation.size || 1;
 		// Thinning the formation speeds up what is left, as in the arcade original.
 		const thinned = 1 - alive / total;
-		return base * (1 + thinned * (FORMATION.clearSpeedUp - 1));
+		// A boss is a one-alien formation, so the thinning term never kicks in;
+		// its speed comes from the type instead.
+		const factor = Math.max(...state.aliens.map((a) => ENEMY_TYPES[a.type].speedFactor));
+		return base * factor * (1 + thinned * (FORMATION.clearSpeedUp - 1));
 	}
 
 	function updateAliens(dt) {
 		if (!state.aliens.length) return;
+
+		for (const alien of state.aliens) {
+			if (alien.hitFlash > 0) alien.hitFlash = Math.max(0, alien.hitFlash - dt);
+		}
 
 		state.animTimer += dt;
 		if (state.animTimer >= ALIEN_FRAME_TIME) {
@@ -202,14 +234,22 @@ export function createGame({ width, height, controlType, onStats, onWave, onFini
 			for (const alien of state.aliens) {
 				if (deadAliens.has(alien) || !overlaps(bullet, alien)) continue;
 				deadBullets.add(bullet);
-				deadAliens.add(alien);
-				addExplosion(alien.x, alien.y);
+				alien.hp--;
+				alien.hitFlash = HIT_FLASH_TIME;
 				playSound('explosion');
-				state.score += ENEMY_TYPES[alien.type].score;
+				if (alien.hp <= 0) {
+					deadAliens.add(alien);
+					// A boss is big enough that one puff in a corner looks wrong.
+					addExplosion(alien.x, alien.y, alien.w, alien.h);
+					state.score += ENEMY_TYPES[alien.type].score;
+				} else {
+					// A hit that did not kill still shows where it landed.
+					addExplosion(bullet.x - ALIEN.width / 2, bullet.y - ALIEN.height / 2);
+				}
 				break;
 			}
 		}
-		if (!deadAliens.size) return;
+		if (!deadBullets.size) return;
 		state.bullets = state.bullets.filter((b) => !deadBullets.has(b));
 		state.aliens = state.aliens.filter((a) => !deadAliens.has(a));
 		emitStats(grantAmmoBonus());

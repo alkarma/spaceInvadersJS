@@ -49,8 +49,15 @@ next, which is wider, deeper and quicker — see `waveLayout()` and `FORMATION` 
 Letting the formation reach the ship's line costs one life and pushes the
 survivors back to the top. The game is won at 100 points.
 
-Two enemies, both from sprites already in `pics/`: the green one walks through
-two frames and scores 1, the purple one fills the back rows and scores 3.
+Every fifth wave is a single boss instead of a grid. A boss is simply an alien
+with more than one hit point, so it marches, steps down and breaches through
+exactly the same code; it just moves faster, carries a health bar and each one
+is tougher than the last.
+
+Three enemies, all from sprites already in `pics/`: the green one walks through
+two frames and scores 1, the purple one fills the back rows and scores 3, and
+the boss reuses `spin1`/`spin2` — the same green art at 1100x790, which is why
+it stays sharp drawn large.
 
 ## Controls
 

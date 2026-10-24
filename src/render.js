@@ -87,18 +87,44 @@ export function createRenderer(canvas, assets) {
 		ctx.restore();
 	}
 
+	function drawHealthBar(alien) {
+		const height = 8;
+		const y = alien.y - height - 10;
+		const ratio = Math.max(0, alien.hp / alien.maxHp);
+		ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+		ctx.fillRect(alien.x, y, alien.w, height);
+		ctx.fillStyle = ratio > 0.3 ? '#00cc00' : '#ff3333';
+		ctx.fillRect(alien.x, y, alien.w * ratio, height);
+		ctx.strokeStyle = '#ffffff';
+		ctx.lineWidth = 1;
+		ctx.strokeRect(alien.x + 0.5, y + 0.5, alien.w - 1, height - 1);
+	}
+
 	function drawAliens(aliens, frame) {
 		for (const alien of aliens) {
 			const type = ENEMY_TYPES[alien.type];
 			// The whole formation shares one frame counter, so they animate in
 			// lockstep the way the arcade original did.
 			const sprite = assets.sprites[type.frames[frame % type.frames.length]];
+			const x = Math.round(alien.x);
+			const y = Math.round(alien.y);
 			if (sprite) {
-				ctx.drawImage(sprite, Math.round(alien.x), Math.round(alien.y), alien.w, alien.h);
+				ctx.drawImage(sprite, x, y, alien.w, alien.h);
+				if (alien.hitFlash > 0) {
+					// Redrawing the sprite additively makes the hit read as a flash
+					// without needing a second set of artwork.
+					ctx.save();
+					ctx.globalCompositeOperation = 'lighter';
+					ctx.globalAlpha = Math.min(1, alien.hitFlash * 6);
+					ctx.drawImage(sprite, x, y, alien.w, alien.h);
+					ctx.restore();
+				}
 			} else {
 				ctx.fillStyle = alien.type === 'elite' ? '#8000ff' : '#00cc00';
-				ctx.fillRect(alien.x, alien.y, alien.w, alien.h);
+				ctx.fillRect(x, y, alien.w, alien.h);
 			}
+			// Only something that can survive a hit needs a bar.
+			if (alien.maxHp > 1) drawHealthBar(alien);
 		}
 	}
 
@@ -106,13 +132,15 @@ export function createRenderer(canvas, assets) {
 		ctx.save();
 		for (const explosion of explosions) {
 			const look = explosionLook(Math.min(1, explosion.t / EXPLOSION.duration));
-			const cx = explosion.x + ALIEN.width / 2;
-			const cy = explosion.y + ALIEN.height / 2;
+			const cx = explosion.x + (explosion.w || ALIEN.width) / 2;
+			const cy = explosion.y + (explosion.h || ALIEN.height) / 2;
+			// A big target gets a correspondingly big blast.
+			const scale = (explosion.w || ALIEN.width) / ALIEN.width;
 			ctx.fillStyle = look.fill;
 			ctx.shadowColor = 'rgba(255, 0, 51, 0.51)';
-			ctx.shadowBlur = look.glow;
+			ctx.shadowBlur = look.glow * scale;
 			ctx.beginPath();
-			ctx.arc(cx, cy, look.size / 2, 0, Math.PI * 2);
+			ctx.arc(cx, cy, (look.size * scale) / 2, 0, Math.PI * 2);
 			ctx.fill();
 		}
 		ctx.restore();
